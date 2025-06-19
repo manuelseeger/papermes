@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Include all user data except the database and preferences -->
+    <exclude domain="database" />
+    <exclude domain="sharedpref" path="." />
+</full-backup-content>

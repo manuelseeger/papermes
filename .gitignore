@@ -1,2 +1,5 @@
 .specstory/
 .env
+app/.gradle/
+app/.idea/
+app/build/

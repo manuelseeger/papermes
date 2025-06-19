@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        android:title="Service">
+
+        <SwitchPreferenceCompat
+            android:key="enabled"
+            android:title="Enable Document Scanner"
+            android:summary="Start/stop the background document scanning service"
+            android:defaultValue="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="API Configuration">
+
+        <EditTextPreference
+            android:key="api_endpoint"
+            android:title="API Endpoint"
+            android:summary="URL where documents will be uploaded"
+            android:defaultValue="http://localhost:8000/api/documents/"
+            android:inputType="textUri" />
+
+        <EditTextPreference
+            android:key="api_token"
+            android:title="API Token"
+            android:summary="Authentication token (optional)"
+            android:inputType="textPassword" />
+
+        <Preference
+            android:key="test_connection"
+            android:title="Test Connection"
+            android:summary="Test the API endpoint connection" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Upload Settings">
+
+        <SwitchPreferenceCompat
+            android:key="wifi_only"
+            android:title="WiFi Only"
+            android:summary="Only upload documents when connected to WiFi"
+            android:defaultValue="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Detection Settings">
+
+        <SeekBarPreference
+            android:key="document_confidence_threshold"
+            android:title="Document Detection Confidence"
+            android:summary="Minimum confidence level for document detection"
+            android:defaultValue="70"
+            android:max="100"
+            app:showSeekBarValue="true" />
+
+        <ListPreference
+            android:key="scan_interval"
+            android:title="Scan Interval"
+            android:summary="How often to scan for new images"
+            android:defaultValue="30"
+            android:entries="@array/scan_interval_entries"
+            android:entryValues="@array/scan_interval_values" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Status">
+
+        <Preference
+            android:key="document_count"
+            android:title="Documents Found"
+            android:summary="Loading..." />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Advanced">
+
+        <Preference
+            android:key="app_settings"
+            android:title="App Settings"
+            android:summary="Open system settings for this app" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

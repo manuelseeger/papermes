@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Document Scanner</string>
+    
+    <!-- Notification strings -->
+    <string name="notification_title">Document Scanner</string>
+    <string name="notification_text">Monitoring for new documents</string>
+    
+    <!-- Permission strings -->
+    <string name="permission_storage_rationale">We need access to your photos to scan for documents</string>
+    <string name="permission_notification_rationale">We need notification permission to show scanning status</string>
+    
+    <!-- Settings strings -->
+    <string name="settings_title">Settings</string>
+    <string name="api_endpoint_title">API Endpoint</string>
+    <string name="api_endpoint_summary">URL where documents will be uploaded</string>
+    <string name="api_token_title">API Token</string>
+    <string name="api_token_summary">Authentication token (optional)</string>
+    <string name="wifi_only_title">WiFi Only</string>
+    <string name="wifi_only_summary">Only upload documents when connected to WiFi</string>
+    <string name="enabled_title">Enable Service</string>
+    <string name="enabled_summary">Start/stop the background document scanning service</string>
+    
+    <!-- Status strings -->
+    <string name="status_scanning">Scanning for new images…</string>
+    <string name="status_processing">Processing documents…</string>
+    <string name="status_uploading">Uploading documents…</string>
+    <string name="status_idle">Monitoring for new documents</string>
+    
+    <!-- Error strings -->
+    <string name="error_no_permissions">Missing required permissions</string>
+    <string name="error_network">Network error</string>
+    <string name="error_api">API error</string>
+    
+    <!-- Array resources for preferences -->
+    <string-array name="scan_interval_entries">
+        <item>15 seconds</item>
+        <item>30 seconds</item>
+        <item>1 minute</item>
+        <item>2 minutes</item>
+        <item>5 minutes</item>
+        <item>10 minutes</item>
+    </string-array>
+    
+    <string-array name="scan_interval_values">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+        <item>120</item>
+        <item>300</item>
+        <item>600</item>
+    </string-array>
+</resources>
