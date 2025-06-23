@@ -10,7 +10,92 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/backend"
+            "cwd": "${workspaceFolder}/backend",
+            "envFile": "${workspaceFolder}/backend/.env"
+        },        {
+            "name": "Run Current Python File (with Services)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/backend",
+            "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+            "postDebugTask": "Stop All Services",
+            "envFile": "${workspaceFolder}/backend/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend/src"
+            }
+        },        {
+            "name": "Run Current Python File (Host + MCP Only)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/backend",
+            "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+            "preLaunchTask": "Start Host and MCP Server",
+            "envFile": "${workspaceFolder}/backend/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend/src"
+            }
+        },
+        {
+            "name": "Debug Current Python File (Host + MCP Only)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/backend",
+            "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+            "preLaunchTask": "Start and Wait for Services",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/backend/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend/src"
+            }
+        },
+        {
+            "name": "Run MCP Server Only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/src/server/server.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/backend",
+            "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+            "envFile": "${workspaceFolder}/backend/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend/src"
+            }
+        },
+        {
+            "name": "Debug Current Python File (with Services)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/backend",
+            "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+            "preLaunchTask": "Start All Services",
+            "postDebugTask": "Stop All Services",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/backend/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend/src"
+            }
+        },
+        {
+            "name": "Debug Host API",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/src/host/host.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/backend",
+            "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+            "justMyCode": false,
+            "envFile": "${workspaceFolder}/backend/.env",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend/src"
+            }
         }
     ]
 }

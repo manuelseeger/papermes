@@ -6,14 +6,14 @@ paperless-ngx lives in ./paperless-ngx and is fully setup and running. Documents
 
 ## General
 - Secrets are stored in .env
-- Your integrated terminal is powershell
+- Your integrated terminal is powershell, use powershell syntax (don't use && to chain commands, use `;` instead)
 
 ## App
 - Android app is in ./app
 - We don't provide an iOS app
 
 ## Python
-- Use uv for managing dependencies
+- Use uv for managing dependencies (uv add <package> to add a package)
 - Source code is in the ./src directory
 - Use type hints with pydantic
 - Use f-strings for string formatting

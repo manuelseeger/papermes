@@ -16,6 +16,252 @@
 			"options": {
 				"cwd": "${workspaceFolder}/app"
 			}
+		},
+		{
+			"label": "Start Host API",
+			"type": "shell",
+			"command": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+			"args": [
+				"${workspaceFolder}/backend/run_host.py"
+			],
+			"group": "build",
+			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}/backend"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"problemMatcher": {
+				"pattern": {
+					"regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"message": 5
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^.*Starting.*",
+					"endsPattern": "^.*Application startup complete.*"
+				}
+			}
+		},
+		{
+			"label": "Start Paperless-NGX",
+			"type": "shell",
+			"command": "docker-compose",
+			"args": [
+				"up",
+				"-d"
+			],
+			"group": "build",
+			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}/paperless-ngx"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Start Firefly-III",
+			"type": "shell",
+			"command": "docker-compose",
+			"args": [
+				"up",
+				"-d"
+			],
+			"group": "build",
+			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}/firefly-iii"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Start MCP Server",
+			"type": "shell",
+			"command": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+			"args": [
+				"${workspaceFolder}/backend/src/server/server.py"
+			],
+			"group": "build",
+			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}/backend",
+				"env": {
+					"PYTHONPATH": "${workspaceFolder}/backend/src;${workspaceFolder}/backend/src/lib"
+				}
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"problemMatcher": {
+				"pattern": {
+					"regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+					"file": 1,
+					"line": 2,
+					"column": 3,
+					"severity": 4,
+					"message": 5
+				},
+				"background": {
+					"activeOnStart": true,
+					"beginsPattern": "^.*Starting Papermes MCP Server.*",
+					"endsPattern": "^.*Starting MCP server.*with transport.*"
+				}
+			}
+		},
+		{
+			"label": "Start Host and MCP Server",
+			"dependsOrder": "parallel",
+			"dependsOn": [
+				"Start Host API",
+				"Start MCP Server"
+			],
+			"group": "build",
+			"isBackground": false,
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			}
+		},
+		{
+			"label": "Start and Wait for Services",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"# Start the services in parallel; Start-Job -ScriptBlock { & '${workspaceFolder}/backend/.venv/Scripts/python.exe' '${workspaceFolder}/backend/run_host.py' }; Start-Job -ScriptBlock { $env:PYTHONPATH='${workspaceFolder}/backend/src;${workspaceFolder}/backend/src/lib'; & '${workspaceFolder}/backend/.venv/Scripts/python.exe' '${workspaceFolder}/backend/src/server/server.py' }; Write-Host 'Services starting...'; Start-Sleep 3; Write-Host 'Services should be ready now'"
+			],
+			"group": "build",
+			"isBackground": false,
+			"options": {
+				"cwd": "${workspaceFolder}/backend"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			}
+		},
+		{
+			"label": "Start All Services",
+			"dependsOrder": "parallel",
+			"dependsOn": [
+				"Start Paperless-NGX",
+				"Start Firefly-III",
+				"Start Host API",
+				"Start MCP Server"
+			],
+			"group": "build",
+			"isBackground": true,
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Stop All Services",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"cd '${workspaceFolder}/paperless-ngx'; docker-compose down; cd '${workspaceFolder}/firefly-iii'; docker-compose down; Write-Host 'All services stopped'"
+			],
+			"group": "build",
+			"isBackground": false,
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			}
+		},
+		{
+			"label": "Install Backend Dependencies",
+			"type": "shell",
+			"command": "uv",
+			"args": [
+				"sync"
+			],
+			"group": "build",
+			"isBackground": false,
+			"options": {
+				"cwd": "${workspaceFolder}/backend"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			}
+		},
+		{
+			"label": "Test Host API",
+			"type": "shell",
+			"command": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+			"args": [
+				"${workspaceFolder}/backend/test_api.py"
+			],
+			"group": "test",
+			"isBackground": false,
+			"options": {
+				"cwd": "${workspaceFolder}/backend"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "new",
+				"showReuseMessage": true,
+				"clear": false
+			},
+			"dependsOn": [
+				"Start Host API"
+			]
 		}
 	]
 }

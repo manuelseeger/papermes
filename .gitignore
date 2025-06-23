@@ -4,3 +4,6 @@ app/.gradle/
 app/.idea/
 app/build/
 *.env
+__pycache__/
+*.pyc
+.pytest_cache/
