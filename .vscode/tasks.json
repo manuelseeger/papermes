@@ -104,7 +104,7 @@
 			"type": "shell",
 			"command": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
 			"args": [
-				"${workspaceFolder}/backend/src/server/server.py"
+				"${workspaceFolder}/backend/src/mcp/server.py"
 			],
 			"group": "build",
 			"isBackground": true,
@@ -134,7 +134,7 @@
 				"background": {
 					"activeOnStart": true,
 					"beginsPattern": "^.*Starting Papermes MCP Server.*",
-					"endsPattern": "^.*Starting MCP server.*with transport.*"
+					"endsPattern": "^.*Application startup complete.*"
 				}
 			}
 		},

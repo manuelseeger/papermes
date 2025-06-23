@@ -7,6 +7,7 @@ paperless-ngx lives in ./paperless-ngx and is fully setup and running. Documents
 ## General
 - Secrets are stored in .env
 - Your integrated terminal is powershell, use powershell syntax (don't use && to chain commands, use `;` instead)
+- Do not create summary MD files of your actions
 
 ## App
 - Android app is in ./app
