@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 from decimal import Decimal
 from pydantic import BaseModel
 from fastmcp import FastMCP
-
+from datetime import datetime
 # Add lib directory to path for imports
 lib_path = Path(__file__).parent.parent / "lib"
 sys.path.insert(0, str(lib_path))
@@ -88,7 +88,7 @@ async def get_accounts() -> List[Account]:
 
 
 @mcp.tool()
-async def create_transaction(
+async def create_transactions(
     transactions: List[TransactionRequest],
     group_title: Optional[str] = None
 ) -> dict:
@@ -104,10 +104,10 @@ async def create_transaction(
     """
     for tx_request in transactions:
         logger.info(f"Processing transaction request: {tx_request.model_dump()}")
-    return {
-        "success": False,
-        "error": "This tool is not implemented yet. Please implement the create_transaction function."
-    }
+    #return {
+    #    "success": False,
+    #    "error": "This tool is not implemented yet. Please implement the create_transaction function."
+    #}
     try:
         # Create Firefly client (will use environment variables)
         with FireflyClient() as client:
@@ -123,7 +123,7 @@ async def create_transaction(
                 
                 if tx_request.type == "withdrawal":
                     # For withdrawals: source should be an account ID, destination should be an expense account name
-                    source_id = tx_request.source_account
+                    source_name = tx_request.source_account
                     destination_name = tx_request.destination_account
                 elif tx_request.type == "deposit":
                     # For deposits: source should be a revenue account name, destination should be an account ID
@@ -144,7 +144,7 @@ async def create_transaction(
                 
                 split = TransactionSplit(
                     type=tx_request.type,
-                    date=tx_request.date or "",  # Will default to today in Firefly
+                    date=tx_request.date or datetime.now().date().isoformat(),  # Will default to today in Firefly
                     amount=str(tx_request.amount),
                     description=tx_request.description,
                     source_id=source_id,

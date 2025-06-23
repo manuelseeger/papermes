@@ -104,7 +104,7 @@
 			"type": "shell",
 			"command": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
 			"args": [
-				"${workspaceFolder}/backend/src/mcp/server.py"
+				"${workspaceFolder}/backend/src/mcp_server/server.py"
 			],
 			"group": "build",
 			"isBackground": true,

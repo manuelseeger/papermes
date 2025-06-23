@@ -40,6 +40,7 @@ markers = [
     "unit: Unit tests that don't require external dependencies",
     "integration: Integration tests that require external services (Firefly III, etc.)",
     "slow: Tests that take a long time to run",
+    "creates_data: Tests that create real data in external services (use with caution)",
 ]
 
 # Minimum version

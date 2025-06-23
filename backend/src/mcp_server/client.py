@@ -97,7 +97,7 @@ def analyze_receipt(base64_image: str, accounts: list[str], tools):
             {
                 "role": "user",
                 "content": [
-                    { "type": "input_text", "text": "Analyze this image. If you find this is a receipt, determine transaction type, source and destination accounts, and create new transactions. If you can't find a suitable destiation account, use account 'Unknown'" },
+                    { "type": "input_text", "text": "Analyze this image. If you find this is a receipt, determine for each line item: transaction type, source and destination accounts. If you can't find a suitable destination account, use account 'Unknown'. Create a new transaction group with one transaction for each line item." },
                     {
                         "type": "input_image",
                         "image_url": f"data:image/jpeg;base64,{base64_image}",

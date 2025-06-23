@@ -58,7 +58,7 @@
             "name": "Run MCP Server Only",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/backend/src/server/server.py",
+            "program": "${workspaceFolder}/backend/src/mcp_server/server.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}/backend",
             "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
