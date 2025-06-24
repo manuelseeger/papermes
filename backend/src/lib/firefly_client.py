@@ -9,6 +9,7 @@ import logging
 from datetime import date as Date
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 import httpx
@@ -20,6 +21,36 @@ DEFAULT_CURRENCY = "USD"
 
 
 logger = logging.getLogger(__name__)
+
+
+class AccountType(str, Enum):
+    """Firefly III Account Types based on AccountTypeEnum."""
+
+    ASSET = "Asset account"
+    BENEFICIARY = "Beneficiary account"
+    CASH = "Cash account"
+    CREDITCARD = "Credit card"
+    DEBT = "Debt"
+    DEFAULT = "Default account"
+    EXPENSE = "Expense account"
+    IMPORT = "Import account"
+    INITIAL_BALANCE = "Initial balance account"
+    LIABILITY_CREDIT = "Liability credit account"
+    LOAN = "Loan"
+    MORTGAGE = "Mortgage"
+    RECONCILIATION = "Reconciliation account"
+    REVENUE = "Revenue account"
+
+
+class TransactionType(str, Enum):
+    """Firefly III Transaction Types."""
+
+    WITHDRAWAL = "withdrawal"
+    DEPOSIT = "deposit"
+    TRANSFER = "transfer"
+    OPENING_BALANCE = "opening_balance"
+    RECONCILIATION = "reconciliation"
+    LIABILITY_CREDIT = "liability_credit"
 
 
 class FireflyAPIError(Exception):
@@ -42,7 +73,7 @@ class AccountAttributes(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     name: str
-    type: str
+    type: AccountType
     account_role: Optional[str] = None
     currency_id: Optional[str] = None
     currency_code: Optional[str] = None
@@ -90,9 +121,9 @@ class TransactionSplit(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    type: str
+    type: TransactionType
     date: str
-    amount: str
+    amount: float
     description: str
     source_id: Optional[str] = None
     source_name: Optional[str] = None
@@ -193,6 +224,7 @@ class FireflyClient:
         host: str,
         access_token: str,
         timeout: float = DEFAULT_TIMEOUT,
+        httpx_client: Optional[httpx.Client] = None,
     ):
         """
         Initialize the Firefly III client.
@@ -201,6 +233,7 @@ class FireflyClient:
             host: Firefly III host URL.
             access_token: Personal Access Token.
             timeout: HTTP request timeout in seconds.
+            httpx_client: Optional pre-configured httpx.Client instance.
         """
         self.host = host
         self.access_token = access_token
@@ -215,15 +248,27 @@ class FireflyClient:
         self.host = self.host.rstrip("/")
 
         # Set up HTTP client with default headers
-        self.client = httpx.Client(
-            timeout=timeout,
-            base_url=f"{self.host}/api/v1",
-            headers={
-                "Authorization": f"Bearer {self.access_token}",
-                "Accept": "application/vnd.api+json",
-                "Content-Type": "application/json",
-            },
-        )
+        if httpx_client is not None:
+            self.client = httpx_client
+            # Update the base URL and headers for the provided client
+            self.client.base_url = f"{self.host}/api/v1"
+            self.client.headers.update(
+                {
+                    "Authorization": f"Bearer {self.access_token}",
+                    "Accept": "application/vnd.api+json",
+                    "Content-Type": "application/json",
+                }
+            )
+        else:
+            self.client = httpx.Client(
+                timeout=timeout,
+                base_url=f"{self.host}/api/v1",
+                headers={
+                    "Authorization": f"Bearer {self.access_token}",
+                    "Accept": "application/vnd.api+json",
+                    "Content-Type": "application/json",
+                },
+            )
 
     def __enter__(self):
         return self
@@ -350,9 +395,7 @@ class FireflyClient:
             group_title: Optional title for the transaction group
             error_if_duplicate_hash: Whether to error if duplicate hash detected
             apply_rules: Whether to apply rules to the transaction
-            fire_webhooks: Whether to fire webhooks for the transaction
-
-        Returns:
+            fire_webhooks: Whether to fire webhooks for the transaction        Returns:
             TransactionResponse object containing the created transaction
         """
         transaction_data = TransactionStore(
@@ -373,7 +416,7 @@ class FireflyClient:
         amount: Union[str, float, Decimal],
         description: str,
         source_account_id: str,
-        destination_account_name: str,
+        destination_account_id: str,
         date: Optional[Union[str, Date]] = None,
         category_name: Optional[str] = None,
         budget_name: Optional[str] = None,
@@ -394,7 +437,9 @@ class FireflyClient:
             budget_name: Optional budget name
             notes: Optional notes
             tags: Optional list of tags
-            **kwargs: Additional transaction split fields        Returns:
+            **kwargs: Additional transaction split fields
+
+        Returns:
             TransactionResponse object
         """
         if date is None:
@@ -403,12 +448,12 @@ class FireflyClient:
             date = date.isoformat()
 
         transaction_split = TransactionSplit(
-            type="withdrawal",
+            type=TransactionType.WITHDRAWAL,
             date=date,
             amount=str(amount),
             description=description,
             source_id=source_account_id,
-            destination_name=destination_account_name,
+            destination_id=destination_account_id,
             category_name=category_name,
             budget_name=budget_name,
             notes=notes,
@@ -441,9 +486,9 @@ class FireflyClient:
             date: Transaction date (defaults to today)
             category_name: Optional category name
             notes: Optional notes
-            tags: Optional list of tags
-            **kwargs: Additional transaction split fields
-              Returns:
+            tags: Optional list of tags            **kwargs: Additional transaction split fields
+
+        Returns:
             TransactionResponse object
         """
         if date is None:
@@ -452,7 +497,7 @@ class FireflyClient:
             date = date.isoformat()
 
         transaction_split = TransactionSplit(
-            type="deposit",
+            type=TransactionType.DEPOSIT,
             date=date,
             amount=str(amount),
             description=description,
@@ -498,7 +543,7 @@ class FireflyClient:
             date = date.isoformat()
 
         transaction_split = TransactionSplit(
-            type="transfer",
+            type=TransactionType.TRANSFER,
             date=date,
             amount=str(amount),
             description=description,
@@ -537,15 +582,20 @@ class FireflyClient:
 
 
 # Convenience function for creating a client
-def create_client(host: str, access_token: str) -> FireflyClient:
+def create_client(
+    host: str, access_token: str, httpx_client: Optional[httpx.Client] = None
+) -> FireflyClient:
     """
     Create a Firefly III client instance.
 
     Args:
         host: Firefly III host URL.
         access_token: Personal Access Token.
+        httpx_client: Optional pre-configured httpx.Client instance.
 
     Returns:
         FireflyClient instance
     """
-    return FireflyClient(host=host, access_token=access_token)
+    return FireflyClient(
+        host=host, access_token=access_token, httpx_client=httpx_client
+    )

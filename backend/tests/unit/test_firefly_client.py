@@ -187,7 +187,7 @@ class TestTransactionHelpers:
             amount=Decimal("25.50"),
             description="Test withdrawal",
             source_account_id="1",
-            destination_account_name="Test Store",
+            destination_account_id="Test Store",
             date=test_date,
         )
 

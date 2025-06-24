@@ -220,7 +220,10 @@ class TestFireflyClientTransactionCreation:
 
     @pytest.mark.creates_data
     def test_create_withdrawal_transaction(
-        self, firefly_client: FireflyClient, sample_account_id
+        self,
+        firefly_client: FireflyClient,
+        default_account_id,
+        sample_expense_account_id,
     ):
         """
         Test creating a withdrawal transaction.
@@ -230,8 +233,8 @@ class TestFireflyClientTransactionCreation:
         transaction = firefly_client.create_withdrawal(
             amount=25.50,
             description="Test Withdrawal - Integration Test",
-            source_account_id=sample_account_id,
-            destination_account_name="Test Expense Account",
+            source_account_id=default_account_id,
+            destination_account_id=sample_expense_account_id,
             category_name="Testing",
             notes="Created by integration test - safe to delete",
             tags=["integration-test", "automated-test"],
@@ -249,9 +252,9 @@ class TestFireflyClientTransactionCreation:
 
         split = attrs.transactions[0]
         assert split.type == "withdrawal"
-        assert split.amount == "25.50"
+        assert split.amount == 25.50
         assert split.description == "Test Withdrawal - Integration Test"
-        assert split.source_id == sample_account_id
+        assert split.source_id == sample_expense_account_id
         assert split.destination_name == "Test Expense Account"
         assert split.category_name == "Testing"
         assert split.notes == "Created by integration test - safe to delete"
@@ -275,7 +278,9 @@ class TestFireflyClientTransactionCreation:
             print(f"   ⚠️  Failed to clean up transaction {transaction.data.id}: {e}")
 
     @pytest.mark.creates_data
-    def test_create_deposit_transaction(self, firefly_client, sample_account_id):
+    def test_create_deposit_transaction(
+        self, firefly_client, sample_expense_account_id
+    ):
         """
         Test creating a deposit transaction.
         ⚠️  WARNING: This test creates real transaction data in Firefly III!
@@ -285,7 +290,7 @@ class TestFireflyClientTransactionCreation:
             amount=100.00,
             description="Test Deposit - Integration Test",
             source_account_name="Test Income Source",
-            destination_account_id=sample_account_id,
+            destination_account_id=sample_expense_account_id,
             category_name="Testing Income",
             notes="Created by integration test - safe to delete",
             tags=["integration-test", "deposit-test"],
@@ -305,7 +310,7 @@ class TestFireflyClientTransactionCreation:
         assert split.amount == "100.00"
         assert split.description == "Test Deposit - Integration Test"
         assert split.source_name == "Test Income Source"
-        assert split.destination_id == sample_account_id
+        assert split.destination_id == sample_expense_account_id
         assert split.category_name == "Testing Income"
         assert split.notes == "Created by integration test - safe to delete"
         assert "integration-test" in split.tags
@@ -328,7 +333,9 @@ class TestFireflyClientTransactionCreation:
             print(f"   ⚠️  Failed to clean up transaction {transaction.data.id}: {e}")
 
     @pytest.mark.creates_data
-    def test_create_transfer_transaction(self, firefly_client, sample_account_id):
+    def test_create_transfer_transaction(
+        self, firefly_client, sample_expense_account_id
+    ):
         """
         Test creating a transfer transaction between accounts.
         ⚠️  WARNING: This test creates real transaction data in Firefly III!
@@ -341,7 +348,7 @@ class TestFireflyClientTransactionCreation:
         # Find a different account than the sample one
         destination_account_id = None
         for account in accounts.data:
-            if account.id != sample_account_id:
+            if account.id != sample_expense_account_id:
                 destination_account_id = account.id
                 break
 
@@ -352,7 +359,7 @@ class TestFireflyClientTransactionCreation:
         transaction = firefly_client.create_transfer(
             amount=50.00,
             description="Test Transfer - Integration Test",
-            source_account_id=sample_account_id,
+            source_account_id=sample_expense_account_id,
             destination_account_id=destination_account_id,
             notes="Created by integration test - safe to delete",
             tags=["integration-test", "transfer-test"],
@@ -371,7 +378,7 @@ class TestFireflyClientTransactionCreation:
         assert split.type == "transfer"
         assert split.amount == "50.00"
         assert split.description == "Test Transfer - Integration Test"
-        assert split.source_id == sample_account_id
+        assert split.source_id == sample_expense_account_id
         assert split.destination_id == destination_account_id
         assert split.notes == "Created by integration test - safe to delete"
         assert "integration-test" in split.tags
@@ -383,7 +390,7 @@ class TestFireflyClientTransactionCreation:
         print(f"\n🔄 Created transfer transaction: {transaction.data.id}")
         print(f"   Amount: {split.amount} {split.currency_code or 'USD'}")
         print(f"   Description: {split.description}")
-        print(f"   From: {sample_account_id} → To: {destination_account_id}")
+        print(f"   From: {sample_expense_account_id} → To: {destination_account_id}")
 
         # Clean up immediately after verification
         try:
@@ -506,7 +513,9 @@ class TestFireflyClientTransactionCreation:
                 )
 
     @pytest.mark.creates_data
-    def test_delete_transaction_functionality(self, firefly_client, sample_account_id):
+    def test_delete_transaction_functionality(
+        self, firefly_client, sample_expense_account_id
+    ):
         """
         Test the delete transaction functionality specifically.
         Creates a transaction and then deletes it to test the delete API.
@@ -515,7 +524,7 @@ class TestFireflyClientTransactionCreation:
         transaction = firefly_client.create_withdrawal(
             amount=1.00,
             description="Test Delete Transaction - Will be deleted",
-            source_account_id=sample_account_id,
+            source_account_id=sample_expense_account_id,
             destination_account_name="Test Delete Expense",
             category_name="Testing Delete",
             notes="Created specifically to test deletion functionality",
