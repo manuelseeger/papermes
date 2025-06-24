@@ -1,41 +1,45 @@
 # client.py
-from mcp.client.streamable_http import streamablehttp_client
-from mcp import ClientSession
+import sys
+import ssl
+import base64
 import asyncio
-import mcp.types as types
-from mcp.shared.session import RequestResponder
-import httpx
 import logging
 import json
-
-import base64
-import os
+import httpx
 from pathlib import Path
-
+from mcp.client.streamable_http import streamablehttp_client
+from mcp import ClientSession
+import mcp.types as types
+from mcp.shared.session import RequestResponder
 from dotenv import load_dotenv
 from openai import OpenAI
-
-import ssl
-
 import truststore
 
-ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+# Add backend directory to path for config import
+backend_path = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(backend_path))
 
+from config import get_config  # noqa: E402
+
+# Get configuration
+config = get_config()
+
+ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 http_client = httpx.Client(verify=ssl_context)
 
 # Load environment variables
 load_dotenv()
 
-# Initialize OpenAI client
-api_key = os.getenv("OPENAI_API_KEY")
+# Initialize OpenAI client using config
+api_key = config.openai.api_key
 if not api_key:
-    raise ValueError("OPENAI_API_KEY environment variable not set")
+    raise ValueError("OpenAI API key not configured. Set OPENAI_API_KEY environment variable or config.yml")
 
 client = OpenAI(api_key=api_key, http_client=http_client)
 
-gpt_prompt_pricing = 0.0000020
-# Cost per completion token
-gpt_completion_pricing = 0.000008
+# Use pricing from config
+gpt_prompt_pricing = config.openai.prompt_token_cost
+gpt_completion_pricing = config.openai.completion_token_cost
 
 def encode_image_to_base64(image_path: Path) -> str:
     """Encode an image file to base64 string."""
@@ -43,16 +47,17 @@ def encode_image_to_base64(image_path: Path) -> str:
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 
-# Configure logging
+# Configure logging using config
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    level=getattr(logging, config.app.log_level),
+    format=config.app.log_format,
+    datefmt=config.app.log_date_format
 )
 logger = logging.getLogger('mcp_client')
 
 
-port = 8100
+# Use port from config
+port = config.mcp_server.port
 
 class LoggingCollector:
     def __init__(self):
@@ -82,7 +87,8 @@ async def message_handler(
 async def analyze_receipt(base64_image: str, accounts: list[dict], tools, session: ClientSession):
     """Analyze receipt using MCP prompts"""
     
-    model_name = "gpt-4.1"
+    # Use model from config
+    model_name = config.services.openai.model
     
     functions = [convert_to_llm_tool(tool) for tool in tools]
 

@@ -1,0 +1,52 @@
+# Papermes Backend Configuration
+# All configuration values for the papermes backend system
+
+# Host API Server
+host_api:
+  host: "0.0.0.0"
+  port: 8090
+  reload: true
+  log_level: "info"
+
+# MCP Server
+mcp_server:
+  name: "papermes-mcp-server"
+  host: "localhost"
+  port: 8100
+  transport: "streamable-http"
+
+# Firefly III Service
+firefly:
+  host: "${PAPERMES_FIREFLY_HOST}"
+  access_token: "${PAPERMES_FIREFLY_ACCESS_TOKEN}"
+  timeout: 30.0
+
+# OpenAI Service
+openai:
+  api_key: "${OPENAI_API_KEY}"
+  model: "gpt-4o"
+  prompt_token_cost: 0.0000020
+  completion_token_cost: 0.000008
+
+# Application Settings
+app:
+  default_currency: "USD"
+  log_level: "INFO"
+  log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  log_date_format: "%Y-%m-%d %H:%M:%S"
+
+# Template Settings
+templates:
+  autoescape: false
+  trim_blocks: true
+  lstrip_blocks: true
+
+# HTTP Client Settings
+http:
+  timeout: 30.0
+  ssl_verify: true
+
+# Paths (relative to backend directory)
+paths:
+  prompts_dir: "src/mcp_server/prompts"
+  lib_dir: "src/lib"

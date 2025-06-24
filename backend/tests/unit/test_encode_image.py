@@ -4,6 +4,11 @@ from pathlib import Path
 
 
 class TestEncodeImageToBase64:
+    
+    def _get_receipt_path(self, testdata_dir: Path, filename: str) -> Path:
+        """Helper to get receipt file path."""
+        return testdata_dir / "photos" / "receipts" / filename    
+    
     def test_encode_image_to_base64_helper(self, testdata_dir):
         """Test the encode_image_to_base64 helper function."""
         # Arrange

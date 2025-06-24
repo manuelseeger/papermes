@@ -5,7 +5,7 @@ These tests call the real OpenAI API to test actual LLM responses.
 
 import pytest
 import os
-from pathlib import Path
+
 from mcp import types
 
 # Import the functions we want to test
@@ -61,14 +61,7 @@ class TestAnalyzeReceiptIntegration:
             )
         ]
     
-    @pytest.fixture
-    def testdata_dir(self):
-        """Get the testdata directory path."""
-        return Path(__file__).parent.parent.parent.parent / "testdata"
     
-    def _get_receipt_path(self, testdata_dir: Path, filename: str) -> Path:
-        """Helper to get receipt file path."""
-        return testdata_dir / "photos" / "receipts" / filename    
     
     @pytest.mark.api_cost
     @pytest.mark.parametrize("receipt_filename,expected_line_items", [

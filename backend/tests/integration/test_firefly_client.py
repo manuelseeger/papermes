@@ -33,12 +33,19 @@ class TestFireflyClient:
     """Integration tests for Firefly III API client."""
     
     def test_environment_variables(self):
-        """Test that required environment variables are set."""
-        host = os.getenv("PAPERMES_FIREFLY_HOST")
-        token = os.getenv("PAPERMES_FIREFLY_ACCESS_TOKEN")
+        """Test that required environment variables or config are set."""
+        # Try config first, then environment variables
+        try:
+            from config import get_config
+            config = get_config()
+            host = config.firefly.host or os.getenv("PAPERMES_FIREFLY_HOST")
+            token = config.firefly.access_token or os.getenv("PAPERMES_FIREFLY_ACCESS_TOKEN")
+        except ImportError:
+            host = os.getenv("PAPERMES_FIREFLY_HOST")
+            token = os.getenv("PAPERMES_FIREFLY_ACCESS_TOKEN")
         
-        assert host is not None, "PAPERMES_FIREFLY_HOST environment variable must be set"
-        assert token is not None, "PAPERMES_FIREFLY_ACCESS_TOKEN environment variable must be set"
+        assert host is not None, "PAPERMES_FIREFLY_HOST environment variable or config.yml must be set"
+        assert token is not None, "PAPERMES_FIREFLY_ACCESS_TOKEN environment variable or config.yml must be set"
         assert len(token) > 10, "PAPERMES_FIREFLY_ACCESS_TOKEN appears to be too short"
     
     def test_client_initialization(self, firefly_client):

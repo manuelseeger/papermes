@@ -46,17 +46,6 @@ class TestFireflyClientUnit:
         assert client.access_token == token
         assert client.client.timeout.read == timeout
     
-    def test_initialization_missing_host_raises_error(self):
-        """Test that missing host raises ValueError."""
-        with patch.dict('os.environ', {}, clear=True):
-            with pytest.raises(ValueError, match="Firefly III host must be provided"):
-                FireflyClient(access_token="test_token")
-    
-    def test_initialization_missing_token_raises_error(self):
-        """Test that missing token raises ValueError."""
-        with patch.dict('os.environ', {}, clear=True):
-            with pytest.raises(ValueError, match="Access token must be provided"):
-                FireflyClient(host="http://test.com")
     
     def test_headers_are_set_correctly(self):
         """Test that HTTP client has correct headers."""

@@ -7,9 +7,18 @@ import sys
 from pathlib import Path
 import pytest
 
+# Add backend directory to Python path for config import
+backend_path = Path(__file__).parent.parent
+sys.path.insert(0, str(backend_path))
+
 # Add src directory to Python path for imports
 src_path = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(src_path))
+
+from config import get_config  # noqa: E402
+
+# Get configuration
+config = get_config()
 
 
 @pytest.fixture(scope="session")
@@ -18,12 +27,12 @@ def firefly_env_check():
     Session-scoped fixture to check if Firefly III environment is properly configured.
     This runs once per test session and can be used to skip integration tests if not configured.
     """
-    host = os.getenv("PAPERMES_FIREFLY_HOST")
-    token = os.getenv("PAPERMES_FIREFLY_ACCESS_TOKEN")
+    host = config.firefly.host or os.getenv("PAPERMES_FIREFLY_HOST")
+    token = config.firefly.access_token or os.getenv("PAPERMES_FIREFLY_ACCESS_TOKEN")
     
     if not host or not token:
         pytest.skip(
-            "Firefly III environment not configured. Set PAPERMES_FIREFLY_HOST and PAPERMES_FIREFLY_ACCESS_TOKEN"
+            "Firefly III environment not configured. Set PAPERMES_FIREFLY_HOST and PAPERMES_FIREFLY_ACCESS_TOKEN or configure in config.yml"
         )
     
     return {"host": host, "token": token}
@@ -80,6 +89,11 @@ def pytest_configure(config):
         "markers", "slow: mark test as slow running"
     )
 
+
+@pytest.fixture
+def testdata_dir() -> Path:
+    """Get the testdata directory path."""
+    return config.testdata_dir_path
 
 def pytest_collection_modifyitems(config, items):
     """

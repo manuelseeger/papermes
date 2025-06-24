@@ -1,12 +1,27 @@
+import sys
+import json
+import logging
+from pathlib import Path
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
-import json
-import logging
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Add backend directory to path for config import
+backend_path = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(backend_path))
+
+from config import get_config  # noqa: E402
+
+# Get configuration
+config = get_config()
+
+# Configure logging using config
+logging.basicConfig(
+    level=getattr(logging, config.app.log_level),
+    format=config.app.log_format,
+    datefmt=config.app.log_date_format
+)
 logger = logging.getLogger(__name__)
 
 # FastAPI app instance

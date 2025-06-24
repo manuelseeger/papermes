@@ -1,34 +1,47 @@
 import sys
 import logging
+import jinja2
 from pathlib import Path
 from typing import List, Optional, Union
 from decimal import Decimal
+from datetime import datetime
 from pydantic import BaseModel
 from fastmcp import FastMCP
-from datetime import datetime
-import jinja2
 
-
-# Add lib directory to path for imports
+# Setup paths and imports
+backend_path = Path(__file__).parent.parent.parent
 lib_path = Path(__file__).parent.parent / "lib"
+sys.path.insert(0, str(backend_path))
 sys.path.insert(0, str(lib_path))
 
-from firefly_client import FireflyClient, FireflyAPIError
+# Import after path setup
+from config import get_config  # noqa: E402
+from firefly_client import FireflyClient, FireflyAPIError  # noqa: E402
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Get configuration
+config = get_config()
+
+# Set up logging using config
+logging.basicConfig(
+    level=getattr(logging, config.app.log_level),
+    format=config.app.log_format,
+    datefmt=config.app.log_date_format
+)
 logger = logging.getLogger(__name__)
 
-# Initialize FastMCP server
-mcp = FastMCP("papermes-mcp-server", host="localhost", port=8100)
+# Initialize FastMCP server using config
+mcp = FastMCP(
+    config.mcp_server.name, 
+    host=config.mcp_server.host, 
+    port=config.mcp_server.port
+)
 
-# Initialize Jinja2 environment for prompt templates
-prompts_dir = Path(__file__).parent / "prompts"
+# Initialize Jinja2 environment for prompt templates using config
 jinja_env = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(prompts_dir),
-    autoescape=False,  # We're working with text prompts, not HTML
-    trim_blocks=True,
-    lstrip_blocks=True
+    loader=jinja2.FileSystemLoader(config.prompts_dir_path),
+    autoescape=config.templates.autoescape,
+    trim_blocks=config.templates.trim_blocks,
+    lstrip_blocks=config.templates.lstrip_blocks
 )
 
 def render_prompt_template(template_name: str, **kwargs) -> str:
@@ -59,7 +72,7 @@ class Account(BaseModel):
     name: str
     type: str
     notes: Optional[str] = ""
-    currency_code: Optional[str] = "USD"
+    currency_code: Optional[str] = None  # Will default to config.app.default_currency
 
 
 class TransactionRequest(BaseModel):
@@ -68,7 +81,7 @@ class TransactionRequest(BaseModel):
     source_account: Optional[str] = None  # account ID or name
     destination_account: Optional[str] = None  # account ID or name
     amount: Union[str, float, Decimal]
-    currency_code: Optional[str] = "USD"
+    currency_code: Optional[str] = None  # Will default to config.app.default_currency
     description: str
     date: Optional[str] = None  # ISO date string, defaults to today
     category_name: Optional[str] = None
@@ -90,8 +103,7 @@ async def get_accounts() -> List[Account]:
         with FireflyClient() as client:
             # Fetch accounts from Firefly III
             firefly_accounts = client.get_accounts()
-            
-            # Map Firefly account data to MCP Account model
+              # Map Firefly account data to MCP Account model
             accounts = []
             for firefly_account in firefly_accounts.data:
                 account = Account(
@@ -99,7 +111,7 @@ async def get_accounts() -> List[Account]:
                     name=firefly_account.attributes.name,
                     type=firefly_account.attributes.type,
                     notes=firefly_account.attributes.notes or "",
-                    currency_code=firefly_account.attributes.currency_code or "USD"
+                    currency_code=firefly_account.attributes.currency_code or config.app.default_currency
                 )
                 accounts.append(account)
             
@@ -171,8 +183,7 @@ async def create_transactions(
                         "success": False,
                         "error": f"Invalid transaction type: {tx_request.type}. Must be 'withdrawal', 'deposit', or 'transfer'"
                     }
-                
-                # Create transaction split using the firefly_client's TransactionSplit model
+                  # Create transaction split using the firefly_client's TransactionSplit model
                 from firefly_client import TransactionSplit
                 
                 split = TransactionSplit(
@@ -184,7 +195,7 @@ async def create_transactions(
                     source_name=source_name,
                     destination_id=destination_id,
                     destination_name=destination_name,
-                    currency_code=tx_request.currency_code,
+                    currency_code=tx_request.currency_code or config.app.default_currency,
                     category_name=tx_request.category_name,
                     budget_name=tx_request.budget_name,
                     notes=tx_request.notes,
@@ -251,8 +262,8 @@ def main():
     """Main entry point for the server"""
     try:
         logger.info("Starting Papermes MCP Server...")
-        # Use run() which is actually synchronous
-        mcp.run(transport="streamable-http")
+        # Use run() with transport from config
+        mcp.run(transport=config.mcp_server.transport)
     except Exception as e:
         logger.error(f"Error starting MCP server: {e}")
         raise

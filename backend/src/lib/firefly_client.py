@@ -6,13 +6,30 @@ Supports account management and transaction creation using Personal Access Token
 """
 
 import os
+import sys
 import logging
+from pathlib import Path
 from typing import Dict, List, Optional, Any, Union
 from datetime import date as Date, datetime
 from decimal import Decimal
 
 import httpx
 from pydantic import BaseModel, Field, ConfigDict, field_validator
+
+# Try to import config if available (for default values)
+try:
+    # Add backend directory to path for config import
+    backend_path = Path(__file__).parent.parent.parent
+    if str(backend_path) not in sys.path:
+        sys.path.insert(0, str(backend_path))
+    from config import get_config
+    config = get_config()
+    DEFAULT_TIMEOUT = config.http.timeout
+    DEFAULT_CURRENCY = config.app.default_currency
+except ImportError:
+    # Fallback if config is not available
+    DEFAULT_TIMEOUT = 30.0
+    DEFAULT_CURRENCY = "USD"
 
 
 logger = logging.getLogger(__name__)
@@ -183,24 +200,29 @@ class FireflyClient:
         self, 
         host: Optional[str] = None, 
         access_token: Optional[str] = None,
-        timeout: float = 30.0
+        timeout: float = DEFAULT_TIMEOUT
     ):
         """
         Initialize the Firefly III client.
         
         Args:
-            host: Firefly III host URL. If None, reads from PAPERMES_FIREFLY_HOST env var.
-            access_token: Personal Access Token. If None, reads from PAPERMES_FIREFLY_ACCESS_TOKEN env var.
+            host: Firefly III host URL. If None, reads from config or PAPERMES_FIREFLY_HOST env var.
+            access_token: Personal Access Token. If None, reads from config or PAPERMES_FIREFLY_ACCESS_TOKEN env var.
             timeout: HTTP request timeout in seconds.
-        """
-        self.host = host or os.getenv("PAPERMES_FIREFLY_HOST")
-        self.access_token = access_token or os.getenv("PAPERMES_FIREFLY_ACCESS_TOKEN")
+        """        # Try to get from config first, then environment variables
+        try:
+            self.host = host or config.firefly.host or os.getenv("PAPERMES_FIREFLY_HOST")
+            self.access_token = access_token or config.firefly.access_token or os.getenv("PAPERMES_FIREFLY_ACCESS_TOKEN")
+        except (NameError, AttributeError):
+            # Fallback if config is not available
+            self.host = host or os.getenv("PAPERMES_FIREFLY_HOST")
+            self.access_token = access_token or os.getenv("PAPERMES_FIREFLY_ACCESS_TOKEN")
         
         if not self.host:
-            raise ValueError("Firefly III host must be provided via host parameter or PAPERMES_FIREFLY_HOST environment variable")
+            raise ValueError("Firefly III host must be provided via host parameter, config.yml, or PAPERMES_FIREFLY_HOST environment variable")
         
         if not self.access_token:
-            raise ValueError("Access token must be provided via access_token parameter or PAPERMES_FIREFLY_ACCESS_TOKEN environment variable")
+            raise ValueError("Access token must be provided via access_token parameter, config.yml, or PAPERMES_FIREFLY_ACCESS_TOKEN environment variable")
         
         # Ensure host doesn't end with slash
         self.host = self.host.rstrip("/")
