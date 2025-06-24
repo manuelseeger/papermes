@@ -23,6 +23,7 @@ Usage:
 """
 
 import os
+from decimal import Decimal
 
 import pytest
 from lib.firefly_client import FireflyAPIError, FireflyClient
@@ -238,6 +239,7 @@ class TestFireflyClientTransactionCreation:
             category_name="Testing",
             notes="Created by integration test - safe to delete",
             tags=["integration-test", "automated-test"],
+            error_if_duplicate_hash=False,
         )
 
         assert transaction is not None
@@ -254,8 +256,8 @@ class TestFireflyClientTransactionCreation:
         assert split.type == "withdrawal"
         assert split.amount == 25.50
         assert split.description == "Test Withdrawal - Integration Test"
-        assert split.source_id == sample_expense_account_id
-        assert split.destination_name == "Test Expense Account"
+        assert split.source_id == default_account_id
+        assert split.destination_id == sample_expense_account_id
         assert split.category_name == "Testing"
         assert split.notes == "Created by integration test - safe to delete"
         assert "integration-test" in split.tags
@@ -275,25 +277,24 @@ class TestFireflyClientTransactionCreation:
             print(f"   ✅ Successfully cleaned up transaction {transaction.data.id}")
             self.created_transaction_ids.remove(transaction.data.id)
         except Exception as e:
-            print(f"   ⚠️  Failed to clean up transaction {transaction.data.id}: {e}")
+            print(
+                f"   ⚠️  Failed to clean up transaction {transaction.data.id}: {e}"
+            ) @ pytest.mark.creates_data
 
-    @pytest.mark.creates_data
-    def test_create_deposit_transaction(
-        self, firefly_client, sample_expense_account_id
-    ):
+    def test_create_deposit_transaction(self, firefly_client, default_account_id):
         """
         Test creating a deposit transaction.
         ⚠️  WARNING: This test creates real transaction data in Firefly III!
-        """
-        # Create a test deposit transaction
+        """  # Create a test deposit transaction
         transaction = firefly_client.create_deposit(
             amount=100.00,
             description="Test Deposit - Integration Test",
             source_account_name="Test Income Source",
-            destination_account_id=sample_expense_account_id,
+            destination_account_id=default_account_id,  # Asset account for deposits
             category_name="Testing Income",
             notes="Created by integration test - safe to delete",
             tags=["integration-test", "deposit-test"],
+            error_if_duplicate_hash=False,
         )
 
         assert transaction is not None
@@ -307,10 +308,10 @@ class TestFireflyClientTransactionCreation:
 
         split = attrs.transactions[0]
         assert split.type == "deposit"
-        assert split.amount == "100.00"
+        assert split.amount == Decimal("100.00")
         assert split.description == "Test Deposit - Integration Test"
         assert split.source_name == "Test Income Source"
-        assert split.destination_id == sample_expense_account_id
+        assert split.destination_id == default_account_id
         assert split.category_name == "Testing Income"
         assert split.notes == "Created by integration test - safe to delete"
         assert "integration-test" in split.tags
@@ -330,12 +331,11 @@ class TestFireflyClientTransactionCreation:
             print(f"   ✅ Successfully cleaned up transaction {transaction.data.id}")
             self.created_transaction_ids.remove(transaction.data.id)
         except Exception as e:
-            print(f"   ⚠️  Failed to clean up transaction {transaction.data.id}: {e}")
+            print(
+                f"   ⚠️  Failed to clean up transaction {transaction.data.id}: {e}"
+            ) @ pytest.mark.creates_data
 
-    @pytest.mark.creates_data
-    def test_create_transfer_transaction(
-        self, firefly_client, sample_expense_account_id
-    ):
+    def test_create_transfer_transaction(self, firefly_client, default_account_id):
         """
         Test creating a transfer transaction between accounts.
         ⚠️  WARNING: This test creates real transaction data in Firefly III!
@@ -345,24 +345,25 @@ class TestFireflyClientTransactionCreation:
         if len(accounts.data) < 2:
             pytest.skip("Need at least 2 asset accounts for transfer test")
 
-        # Find a different account than the sample one
+        # Find a different account than the default one
         destination_account_id = None
         for account in accounts.data:
-            if account.id != sample_expense_account_id:
+            if account.id != default_account_id:
                 destination_account_id = account.id
                 break
 
         if not destination_account_id:
-            pytest.skip("Could not find a different asset account for transfer test")
-
-        # Create a test transfer transaction
+            pytest.skip(
+                "Could not find a different asset account for transfer test"
+            )  # Create a test transfer transaction
         transaction = firefly_client.create_transfer(
             amount=50.00,
             description="Test Transfer - Integration Test",
-            source_account_id=sample_expense_account_id,
+            source_account_id=default_account_id,
             destination_account_id=destination_account_id,
             notes="Created by integration test - safe to delete",
             tags=["integration-test", "transfer-test"],
+            error_if_duplicate_hash=False,
         )
 
         assert transaction is not None
@@ -376,9 +377,9 @@ class TestFireflyClientTransactionCreation:
 
         split = attrs.transactions[0]
         assert split.type == "transfer"
-        assert split.amount == "50.00"
+        assert split.amount == Decimal("50.00")
         assert split.description == "Test Transfer - Integration Test"
-        assert split.source_id == sample_expense_account_id
+        assert split.source_id == default_account_id
         assert split.destination_id == destination_account_id
         assert split.notes == "Created by integration test - safe to delete"
         assert "integration-test" in split.tags
@@ -390,7 +391,7 @@ class TestFireflyClientTransactionCreation:
         print(f"\n🔄 Created transfer transaction: {transaction.data.id}")
         print(f"   Amount: {split.amount} {split.currency_code or 'USD'}")
         print(f"   Description: {split.description}")
-        print(f"   From: {sample_expense_account_id} → To: {destination_account_id}")
+        print(f"   From: {default_account_id} → To: {destination_account_id}")
 
         # Clean up immediately after verification
         try:
@@ -434,12 +435,11 @@ class TestFireflyClientTransactionCreation:
                 notes="Created by integration test - safe to delete",
                 tags=["integration-test", "groceries"],
             ),
-        ]
-
-        # Store the transaction group
+        ]  # Store the transaction group
         transaction = firefly_client.store_transaction(
             transactions=transaction_splits,
             group_title="Test Shopping Trip - Integration Test",
+            error_if_duplicate_hash=False,
         )
 
         assert transaction is not None
@@ -450,20 +450,19 @@ class TestFireflyClientTransactionCreation:
         # Verify transaction attributes
         attrs = transaction.data.attributes
         assert attrs.group_title == "Test Shopping Trip - Integration Test"
-        assert len(attrs.transactions) == 2
-
-        # Verify both splits
-        total_amount = 0
+        assert len(attrs.transactions) == 2  # Verify both splits
+        total_amount = Decimal("0")
         for split in attrs.transactions:
             assert split.type == "withdrawal"
+
             assert split.source_id == default_account_id
             assert split.destination_name == "Groceries"
             assert split.category_name == "Groceries"
             assert "integration-test" in split.tags
             assert "groceries" in split.tags
-            total_amount += float(split.amount)
+            total_amount += split.amount
 
-        assert total_amount == 24.49  # 15.99 + 8.50
+        assert total_amount == Decimal("24.49")  # 15.99 + 8.50
 
         # Track transaction for cleanup
         self.created_transaction_ids.append(transaction.data.id)
@@ -486,14 +485,13 @@ class TestFireflyClientTransactionCreation:
         """
         Test error handling for invalid transaction creation.
         This test should not create any data due to validation errors.
-        """
-        # Test with invalid source account ID
+        """  # Test with invalid source account ID
         with pytest.raises(FireflyAPIError) as exc_info:
             firefly_client.create_withdrawal(
                 amount=10.00,
                 description="Invalid Test Transaction",
                 source_account_id="999999",  # Invalid account ID
-                destination_account_name="Test Expense",
+                destination_account_id="999999",  # Invalid account ID
             )
 
         assert exc_info.value.status_code is not None
@@ -514,21 +512,21 @@ class TestFireflyClientTransactionCreation:
 
     @pytest.mark.creates_data
     def test_delete_transaction_functionality(
-        self, firefly_client, sample_expense_account_id
+        self, firefly_client, sample_expense_account_id, default_account_id
     ):
         """
         Test the delete transaction functionality specifically.
         Creates a transaction and then deletes it to test the delete API.
-        """
-        # Create a test transaction specifically for deletion testing
+        """  # Create a test transaction specifically for deletion testing
         transaction = firefly_client.create_withdrawal(
             amount=1.00,
             description="Test Delete Transaction - Will be deleted",
-            source_account_id=sample_expense_account_id,
-            destination_account_name="Test Delete Expense",
+            source_account_id=default_account_id,  # Asset account
+            destination_account_id=sample_expense_account_id,  # Expense account
             category_name="Testing Delete",
             notes="Created specifically to test deletion functionality",
             tags=["integration-test", "delete-test"],
+            error_if_duplicate_hash=False,
         )
 
         assert transaction is not None

@@ -69,7 +69,7 @@ class TestTransactionSplit:
     """Unit tests for TransactionSplit model."""
 
     def test_amount_validation_string(self):
-        """Test that string amounts are preserved."""
+        """Test that string amounts are converted to Decimal."""
         split = TransactionSplit(
             type="withdrawal",
             date="2025-06-23",
@@ -77,10 +77,10 @@ class TestTransactionSplit:
             description="Test transaction",
         )
 
-        assert split.amount == "123.45"
+        assert split.amount == Decimal("123.45")
 
     def test_amount_validation_float(self):
-        """Test that float amounts are converted to string."""
+        """Test that float amounts are converted to Decimal."""
         split = TransactionSplit(
             type="withdrawal",
             date="2025-06-23",
@@ -88,10 +88,10 @@ class TestTransactionSplit:
             description="Test transaction",
         )
 
-        assert split.amount == "123.45"
+        assert split.amount == Decimal("123.45")
 
     def test_amount_validation_decimal(self):
-        """Test that Decimal amounts are converted to string."""
+        """Test that Decimal amounts are preserved."""
         split = TransactionSplit(
             type="withdrawal",
             date="2025-06-23",
@@ -99,7 +99,7 @@ class TestTransactionSplit:
             description="Test transaction",
         )
 
-        assert split.amount == "123.45"
+        assert split.amount == Decimal("123.45")
 
     def test_optional_fields(self):
         """Test that optional fields work correctly."""
@@ -196,13 +196,13 @@ class TestTransactionHelpers:
 
         # Get the transaction split that was passed
         call_args = mock_client.store_transaction.call_args
-        splits = call_args[0][0]  # First positional argument
-
-        assert len(splits) == 1
+        splits = call_args[0][
+            0
+        ]  # First positional argument        assert len(splits) == 1
         split = splits[0]
         assert split.type == "withdrawal"
         assert split.date == "2025-06-23"
-        assert split.amount == "25.50"
+        assert split.amount == Decimal("25.50")
         assert split.description == "Test withdrawal"
 
     def test_deposit_helper_defaults(self):

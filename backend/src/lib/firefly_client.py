@@ -13,7 +13,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 import httpx
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 # Default values
 DEFAULT_TIMEOUT = 30.0
@@ -24,22 +24,17 @@ logger = logging.getLogger(__name__)
 
 
 class AccountType(str, Enum):
-    """Firefly III Account Types based on AccountTypeEnum."""
+    """Firefly III Account Types based on API specification."""
 
-    ASSET = "Asset account"
-    BENEFICIARY = "Beneficiary account"
-    CASH = "Cash account"
-    CREDITCARD = "Credit card"
-    DEBT = "Debt"
-    DEFAULT = "Default account"
-    EXPENSE = "Expense account"
-    IMPORT = "Import account"
-    INITIAL_BALANCE = "Initial balance account"
-    LIABILITY_CREDIT = "Liability credit account"
-    LOAN = "Loan"
-    MORTGAGE = "Mortgage"
-    RECONCILIATION = "Reconciliation account"
-    REVENUE = "Revenue account"
+    ASSET = "asset"
+    EXPENSE = "expense"
+    IMPORT = "import"
+    REVENUE = "revenue"
+    CASH = "cash"
+    LIABILITY = "liability"
+    LIABILITIES = "liabilities"
+    INITIAL_BALANCE = "initial-balance"
+    RECONCILIATION = "reconciliation"
 
 
 class TransactionType(str, Enum):
@@ -48,9 +43,8 @@ class TransactionType(str, Enum):
     WITHDRAWAL = "withdrawal"
     DEPOSIT = "deposit"
     TRANSFER = "transfer"
-    OPENING_BALANCE = "opening_balance"
     RECONCILIATION = "reconciliation"
-    LIABILITY_CREDIT = "liability_credit"
+    OPENING_BALANCE = "opening balance"
 
 
 class FireflyAPIError(Exception):
@@ -123,7 +117,7 @@ class TransactionSplit(BaseModel):
 
     type: TransactionType
     date: str
-    amount: float
+    amount: Decimal
     description: str
     source_id: Optional[str] = None
     source_name: Optional[str] = None
@@ -165,12 +159,10 @@ class TransactionSplit(BaseModel):
     payment_date: Optional[str] = None
     invoice_date: Optional[str] = None
 
-    @field_validator("amount", mode="before")
-    @classmethod
-    def validate_amount(cls, v):
-        if isinstance(v, (int, float, Decimal)):
-            return str(v)
-        return v
+    @field_serializer("amount")
+    def serialize_amount(self, amount: Decimal) -> str:
+        """Convert Decimal amount to string for JSON serialization."""
+        return str(amount)
 
 
 class TransactionAttributes(BaseModel):
@@ -286,7 +278,7 @@ class FireflyClient:
         endpoint: str,
         data: Optional[Dict] = None,
         params: Optional[Dict] = None,
-    ) -> Dict[str, Any]:
+    ) -> Optional[Dict[str, Any]]:
         """
         Make an HTTP request to the Firefly III API.
 
@@ -297,7 +289,7 @@ class FireflyClient:
             params: Query parameters
 
         Returns:
-            JSON response data
+            JSON response data, or None for successful responses with no content
 
         Raises:
             FireflyAPIError: If the API returns an error
@@ -331,7 +323,16 @@ class FireflyClient:
                     response_data=error_data,
                 )
 
-            return response.json()
+            # Handle successful responses that may have empty content (e.g., DELETE operations)
+            if response.content.strip():
+                try:
+                    return response.json()
+                except Exception:
+                    # If JSON parsing fails but status is successful, return None
+                    return None
+            else:
+                # Empty response body - return None for successful operations
+                return None
 
         except httpx.RequestError as e:
             raise FireflyAPIError(f"Request failed: {str(e)}")
@@ -428,8 +429,7 @@ class FireflyClient:
         Create a withdrawal transaction (expense).
 
         Args:
-            amount: Transaction amount (positive number)
-            description: Transaction description
+            amount: Transaction amount (positive number)            description: Transaction description
             source_account_id: ID of the source account (where money comes from)
             destination_account_name: Name of the destination account (where money goes to)
             date: Transaction date (defaults to today)
@@ -437,20 +437,23 @@ class FireflyClient:
             budget_name: Optional budget name
             notes: Optional notes
             tags: Optional list of tags
-            **kwargs: Additional transaction split fields
-
-        Returns:
+            **kwargs: Additional transaction split fields        Returns:
             TransactionResponse object
         """
         if date is None:
-            date = datetime.now().date().isoformat()
+            current_date = datetime.now().date()
+            date = (
+                current_date.isoformat()
+                if hasattr(current_date, "isoformat")
+                else str(current_date)
+            )
         elif isinstance(date, Date):
             date = date.isoformat()
 
         transaction_split = TransactionSplit(
             type=TransactionType.WITHDRAWAL,
             date=date,
-            amount=str(amount),
+            amount=amount,
             description=description,
             source_id=source_account_id,
             destination_id=destination_account_id,
@@ -458,10 +461,9 @@ class FireflyClient:
             budget_name=budget_name,
             notes=notes,
             tags=tags,
-            **kwargs,
         )
 
-        return self.store_transaction([transaction_split])
+        return self.store_transaction([transaction_split], **kwargs)
 
     def create_deposit(
         self,
@@ -484,22 +486,26 @@ class FireflyClient:
             source_account_name: Name of the source account (where money comes from)
             destination_account_id: ID of the destination account (where money goes to)
             date: Transaction date (defaults to today)
-            category_name: Optional category name
-            notes: Optional notes
-            tags: Optional list of tags            **kwargs: Additional transaction split fields
+            category_name: Optional category name            notes: Optional notes
+            tags: Optional list of tags
+            **kwargs: Additional transaction split fields
 
         Returns:
-            TransactionResponse object
-        """
+            TransactionResponse object"""
         if date is None:
-            date = datetime.now().date()
+            current_date = datetime.now().date()
+            date = (
+                current_date.isoformat()
+                if hasattr(current_date, "isoformat")
+                else str(current_date)
+            )
         elif isinstance(date, Date):
             date = date.isoformat()
 
         transaction_split = TransactionSplit(
             type=TransactionType.DEPOSIT,
             date=date,
-            amount=str(amount),
+            amount=amount,
             description=description,
             source_name=source_account_name,
             destination_id=destination_account_id,
@@ -509,7 +515,7 @@ class FireflyClient:
             **kwargs,
         )
 
-        return self.store_transaction([transaction_split])
+        return self.store_transaction([transaction_split], **kwargs)
 
     def create_transfer(
         self,
@@ -533,19 +539,22 @@ class FireflyClient:
             date: Transaction date (defaults to today)
             notes: Optional notes
             tags: Optional list of tags
-            **kwargs: Additional transaction split fields
-              Returns:
-            TransactionResponse object
-        """
+            **kwargs: Additional transaction split fields              Returns:
+            TransactionResponse object"""
         if date is None:
-            date = datetime.now().date()
+            current_date = datetime.now().date()
+            date = (
+                current_date.isoformat()
+                if hasattr(current_date, "isoformat")
+                else str(current_date)
+            )
         elif isinstance(date, Date):
             date = date.isoformat()
 
         transaction_split = TransactionSplit(
             type=TransactionType.TRANSFER,
             date=date,
-            amount=str(amount),
+            amount=amount,
             description=description,
             source_id=source_account_id,
             destination_id=destination_account_id,
@@ -554,7 +563,7 @@ class FireflyClient:
             **kwargs,
         )
 
-        return self.store_transaction([transaction_split])
+        return self.store_transaction([transaction_split], **kwargs)
 
     def delete_transaction(self, transaction_group_id: str) -> None:
         """

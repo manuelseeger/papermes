@@ -192,8 +192,7 @@ async def create_transactions(
                     return {
                         "success": False,
                         "error": f"Invalid transaction type: {tx_request.type}. Must be 'withdrawal', 'deposit', or 'transfer'",
-                    }
-                # Create transaction split using the firefly_client's TransactionSplit model
+                    }  # Create transaction split using the firefly_client's TransactionSplit model
                 from firefly_client import TransactionSplit
 
                 split = TransactionSplit(
@@ -202,7 +201,7 @@ async def create_transactions(
                     or datetime.now()
                     .date()
                     .isoformat(),  # Will default to today in Firefly
-                    amount=str(tx_request.amount),
+                    amount=tx_request.amount,
                     description=tx_request.description,
                     source_id=source_id,
                     source_name=source_name,
