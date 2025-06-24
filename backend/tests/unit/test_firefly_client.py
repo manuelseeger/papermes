@@ -72,7 +72,7 @@ class TestTransactionSplit:
         """Test that string amounts are converted to Decimal."""
         split = TransactionSplit(
             type="withdrawal",
-            date="2025-06-23",
+            date=date(2025, 6, 23),
             amount="123.45",
             description="Test transaction",
         )
@@ -83,7 +83,7 @@ class TestTransactionSplit:
         """Test that float amounts are converted to Decimal."""
         split = TransactionSplit(
             type="withdrawal",
-            date="2025-06-23",
+            date=date(2025, 6, 23),
             amount=123.45,
             description="Test transaction",
         )
@@ -94,7 +94,7 @@ class TestTransactionSplit:
         """Test that Decimal amounts are preserved."""
         split = TransactionSplit(
             type="withdrawal",
-            date="2025-06-23",
+            date=date(2025, 6, 23),
             amount=Decimal("123.45"),
             description="Test transaction",
         )
@@ -105,7 +105,7 @@ class TestTransactionSplit:
         """Test that optional fields work correctly."""
         split = TransactionSplit(
             type="withdrawal",
-            date="2025-06-23",
+            date=date(2025, 6, 23),
             amount="100.00",
             description="Test",
             category_name="Food",
@@ -116,6 +116,36 @@ class TestTransactionSplit:
         assert split.category_name == "Food"
         assert split.tags == ["test", "food"]
         assert split.notes == "Test notes"
+
+    def test_date_serialization(self):
+        """Test that Date objects are properly serialized to ISO format."""
+        test_date = date(2025, 6, 23)
+        split = TransactionSplit(
+            type="withdrawal",
+            date=test_date,
+            amount="100.00",
+            description="Test transaction",
+        )
+
+        # Test serialization by calling model_dump
+        serialized = split.model_dump()
+        assert serialized["date"] == "2025-06-23"
+
+    def test_optional_date_fields_serialization(self):
+        """Test that optional date fields are properly serialized."""
+        test_date = date(2025, 6, 23)
+        split = TransactionSplit(
+            type="withdrawal",
+            date=test_date,
+            amount="100.00",
+            description="Test transaction",
+            interest_date=test_date,
+            book_date=None,  # This should remain None
+        )
+
+        serialized = split.model_dump()
+        assert serialized["interest_date"] == "2025-06-23"
+        assert serialized["book_date"] is None
 
 
 class TestAccount:
@@ -130,9 +160,9 @@ class TestAccount:
             currency_code="USD",
         )
 
-        account = Account(id="123", attributes=attributes)
+        account = Account(id=123, attributes=attributes)
 
-        assert account.id == "123"
+        assert account.id == 123
         assert account.type == "accounts"  # Default value
         assert account.attributes.name == "Test Account"
         assert account.attributes.current_balance == "1000.00"
@@ -186,22 +216,19 @@ class TestTransactionHelpers:
         client.create_withdrawal(
             amount=Decimal("25.50"),
             description="Test withdrawal",
-            source_account_id="1",
-            destination_account_id="Test Store",
+            source_account_id=1,
+            destination_account_id=2,
             date=test_date,
         )
 
         # Check that store_transaction was called
-        mock_client.store_transaction.assert_called_once()
-
-        # Get the transaction split that was passed
+        mock_client.store_transaction.assert_called_once()  # Get the transaction split that was passed
         call_args = mock_client.store_transaction.call_args
-        splits = call_args[0][
-            0
-        ]  # First positional argument        assert len(splits) == 1
+        splits = call_args[0][0]  # First positional argument
+        assert len(splits) == 1
         split = splits[0]
         assert split.type == "withdrawal"
-        assert split.date == "2025-06-23"
+        assert split.date == date(2025, 6, 23)
         assert split.amount == Decimal("25.50")
         assert split.description == "Test withdrawal"
 
@@ -214,14 +241,14 @@ class TestTransactionHelpers:
         client.store_transaction = mock_client.store_transaction
 
         with patch("lib.firefly_client.datetime") as mock_datetime:
-            # Mock the date return properly - return a string directly
-            mock_datetime.now.return_value.date.return_value = "2025-06-23"
+            # Mock the date return properly - return a date object
+            mock_datetime.now.return_value.date.return_value = date(2025, 6, 23)
 
             client.create_deposit(
                 amount="1500.00",
                 description="Salary",
                 source_account_name="Employer",
-                destination_account_id="1",
+                destination_account_id=1,
             )
 
         mock_client.store_transaction.assert_called_once()
@@ -231,7 +258,7 @@ class TestTransactionHelpers:
         split = splits[0]
 
         assert split.type == "deposit"
-        assert split.date == "2025-06-23"
+        assert split.date == date(2025, 6, 23)
 
     def test_transfer_helper(self):
         """Test transfer helper method."""
@@ -244,9 +271,9 @@ class TestTransactionHelpers:
         client.create_transfer(
             amount=100.00,
             description="Transfer between accounts",
-            source_account_id="1",
-            destination_account_id="2",
-            date="2025-06-23",
+            source_account_id=1,
+            destination_account_id=2,
+            date=date(2025, 6, 23),
         )
 
         mock_client.store_transaction.assert_called_once()
@@ -256,8 +283,8 @@ class TestTransactionHelpers:
         split = splits[0]
 
         assert split.type == "transfer"
-        assert split.source_id == "1"
-        assert split.destination_id == "2"
+        assert split.source_id == 1
+        assert split.destination_id == 2
 
     def test_delete_transaction(self):
         """Test delete_transaction method."""
@@ -267,7 +294,7 @@ class TestTransactionHelpers:
         client = FireflyClient(host="http://test.com", access_token="test")
         client._make_request = mock_client._make_request
 
-        client.delete_transaction("123")
+        client.delete_transaction(123)
 
         mock_client._make_request.assert_called_once_with("DELETE", "/transactions/123")
 
@@ -279,7 +306,7 @@ class TestTransactionHelpers:
         client = FireflyClient(host="http://test.com", access_token="test")
         client._make_request = mock_client._make_request
 
-        client.delete_transaction_journal("456")
+        client.delete_transaction_journal(456)
 
         mock_client._make_request.assert_called_once_with(
             "DELETE", "/transaction-journals/456"

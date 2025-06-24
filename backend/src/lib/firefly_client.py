@@ -97,7 +97,7 @@ class Account(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    id: str
+    id: int
     type: str = Field(default="accounts")
     attributes: AccountAttributes
 
@@ -116,23 +116,23 @@ class TransactionSplit(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     type: TransactionType
-    date: str
+    date: Date
     amount: Decimal
     description: str
-    source_id: Optional[str] = None
+    source_id: Optional[int] = None
     source_name: Optional[str] = None
-    destination_id: Optional[str] = None
+    destination_id: Optional[int] = None
     destination_name: Optional[str] = None
-    currency_id: Optional[str] = None
+    currency_id: Optional[int] = None
     currency_code: Optional[str] = None
     foreign_amount: Optional[str] = None
-    foreign_currency_id: Optional[str] = None
+    foreign_currency_id: Optional[int] = None
     foreign_currency_code: Optional[str] = None
-    budget_id: Optional[str] = None
+    budget_id: Optional[int] = None
     budget_name: Optional[str] = None
-    category_id: Optional[str] = None
+    category_id: Optional[int] = None
     category_name: Optional[str] = None
-    bill_id: Optional[str] = None
+    bill_id: Optional[int] = None
     bill_name: Optional[str] = None
     reconciled: Optional[bool] = None
     notes: Optional[str] = None
@@ -141,7 +141,7 @@ class TransactionSplit(BaseModel):
     external_id: Optional[str] = None
     external_url: Optional[str] = None
     original_source: Optional[str] = None
-    recurrence_id: Optional[str] = None
+    recurrence_id: Optional[int] = None
     bunq_payment_id: Optional[str] = None
     import_hash_v2: Optional[str] = None
     sepa_cc: Optional[str] = None
@@ -152,17 +152,32 @@ class TransactionSplit(BaseModel):
     sepa_ep: Optional[str] = None
     sepa_ci: Optional[str] = None
     sepa_batch_id: Optional[str] = None
-    interest_date: Optional[str] = None
-    book_date: Optional[str] = None
-    process_date: Optional[str] = None
-    due_date: Optional[str] = None
-    payment_date: Optional[str] = None
-    invoice_date: Optional[str] = None
+    interest_date: Optional[Date] = None
+    book_date: Optional[Date] = None
+    process_date: Optional[Date] = None
+    due_date: Optional[Date] = None
+    payment_date: Optional[Date] = None
+    invoice_date: Optional[Date] = None
 
     @field_serializer("amount")
     def serialize_amount(self, amount: Decimal) -> str:
         """Convert Decimal amount to string for JSON serialization."""
         return str(amount)
+
+    @field_serializer(
+        "date",
+        "interest_date",
+        "book_date",
+        "process_date",
+        "due_date",
+        "payment_date",
+        "invoice_date",
+    )
+    def serialize_date(self, date_value: Optional[Date]) -> Optional[str]:
+        """Convert Date objects to ISO format strings for JSON serialization."""
+        if date_value is None:
+            return None
+        return date_value.isoformat()
 
 
 class TransactionAttributes(BaseModel):
@@ -191,7 +206,7 @@ class Transaction(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    id: str
+    id: int
     type: str = Field(default="transactions")
     attributes: TransactionAttributes
 
@@ -367,7 +382,7 @@ class FireflyClient:
         response_data = self._make_request("GET", "/accounts", params=params)
         return AccountsList(**response_data)
 
-    def get_account(self, account_id: str) -> Account:
+    def get_account(self, account_id: int) -> Account:
         """
         Retrieve a specific account by ID.
 
@@ -416,9 +431,9 @@ class FireflyClient:
         self,
         amount: Union[str, float, Decimal],
         description: str,
-        source_account_id: str,
-        destination_account_id: str,
-        date: Optional[Union[str, Date]] = None,
+        source_account_id: int,
+        destination_account_id: int,
+        date: Optional[Date] = None,
         category_name: Optional[str] = None,
         budget_name: Optional[str] = None,
         notes: Optional[str] = None,
@@ -429,26 +444,22 @@ class FireflyClient:
         Create a withdrawal transaction (expense).
 
         Args:
-            amount: Transaction amount (positive number)            description: Transaction description
+            amount: Transaction amount (positive number)
+            description: Transaction description
             source_account_id: ID of the source account (where money comes from)
-            destination_account_name: Name of the destination account (where money goes to)
+            destination_account_id: ID of the destination account (where money goes to)
             date: Transaction date (defaults to today)
             category_name: Optional category name
             budget_name: Optional budget name
             notes: Optional notes
             tags: Optional list of tags
-            **kwargs: Additional transaction split fields        Returns:
+            **kwargs: Additional transaction split fields
+
+        Returns:
             TransactionResponse object
         """
         if date is None:
-            current_date = datetime.now().date()
-            date = (
-                current_date.isoformat()
-                if hasattr(current_date, "isoformat")
-                else str(current_date)
-            )
-        elif isinstance(date, Date):
-            date = date.isoformat()
+            date = datetime.now().date()
 
         transaction_split = TransactionSplit(
             type=TransactionType.WITHDRAWAL,
@@ -470,8 +481,8 @@ class FireflyClient:
         amount: Union[str, float, Decimal],
         description: str,
         source_account_name: str,
-        destination_account_id: str,
-        date: Optional[Union[str, Date]] = None,
+        destination_account_id: int,
+        date: Optional[Date] = None,
         category_name: Optional[str] = None,
         notes: Optional[str] = None,
         tags: Optional[List[str]] = None,
@@ -486,21 +497,16 @@ class FireflyClient:
             source_account_name: Name of the source account (where money comes from)
             destination_account_id: ID of the destination account (where money goes to)
             date: Transaction date (defaults to today)
-            category_name: Optional category name            notes: Optional notes
+            category_name: Optional category name
+            notes: Optional notes
             tags: Optional list of tags
             **kwargs: Additional transaction split fields
 
         Returns:
-            TransactionResponse object"""
+            TransactionResponse object
+        """
         if date is None:
-            current_date = datetime.now().date()
-            date = (
-                current_date.isoformat()
-                if hasattr(current_date, "isoformat")
-                else str(current_date)
-            )
-        elif isinstance(date, Date):
-            date = date.isoformat()
+            date = datetime.now().date()
 
         transaction_split = TransactionSplit(
             type=TransactionType.DEPOSIT,
@@ -521,9 +527,9 @@ class FireflyClient:
         self,
         amount: Union[str, float, Decimal],
         description: str,
-        source_account_id: str,
-        destination_account_id: str,
-        date: Optional[Union[str, Date]] = None,
+        source_account_id: int,
+        destination_account_id: int,
+        date: Optional[Date] = None,
         notes: Optional[str] = None,
         tags: Optional[List[str]] = None,
         **kwargs,
@@ -539,17 +545,13 @@ class FireflyClient:
             date: Transaction date (defaults to today)
             notes: Optional notes
             tags: Optional list of tags
-            **kwargs: Additional transaction split fields              Returns:
-            TransactionResponse object"""
+            **kwargs: Additional transaction split fields
+
+        Returns:
+            TransactionResponse object
+        """
         if date is None:
-            current_date = datetime.now().date()
-            date = (
-                current_date.isoformat()
-                if hasattr(current_date, "isoformat")
-                else str(current_date)
-            )
-        elif isinstance(date, Date):
-            date = date.isoformat()
+            date = datetime.now().date()
 
         transaction_split = TransactionSplit(
             type=TransactionType.TRANSFER,
@@ -565,7 +567,7 @@ class FireflyClient:
 
         return self.store_transaction([transaction_split], **kwargs)
 
-    def delete_transaction(self, transaction_group_id: str) -> None:
+    def delete_transaction(self, transaction_group_id: int) -> None:
         """
         Delete a transaction group by ID.
 
@@ -577,7 +579,7 @@ class FireflyClient:
         """
         self._make_request("DELETE", f"/transactions/{transaction_group_id}")
 
-    def delete_transaction_journal(self, transaction_journal_id: str) -> None:
+    def delete_transaction_journal(self, transaction_journal_id: int) -> None:
         """
         Delete a specific transaction journal by ID.
 

@@ -179,7 +179,7 @@ class TestFireflyClient:
     def test_error_handling_invalid_account_id(self, firefly_client):
         """Test error handling for invalid account ID."""
         with pytest.raises(FireflyAPIError) as exc_info:
-            firefly_client.get_account("999999")  # Presumably invalid ID
+            firefly_client.get_account(999999)  # Presumably invalid ID
 
         assert exc_info.value.status_code is not None
         print(f"\n⚠️  Expected error for invalid account ID: {exc_info.value}")
@@ -254,7 +254,7 @@ class TestFireflyClientTransactionCreation:
 
         split = attrs.transactions[0]
         assert split.type == "withdrawal"
-        assert split.amount == 25.50
+        assert split.amount == Decimal("25.50")
         assert split.description == "Test Withdrawal - Integration Test"
         assert split.source_id == default_account_id
         assert split.destination_id == sample_expense_account_id
