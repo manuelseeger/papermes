@@ -17,8 +17,7 @@ mcp_server:
 
 # Firefly III Service
 firefly:
-  host: "${PAPERMES_FIREFLY_HOST}"
-  access_token: "${PAPERMES_FIREFLY_ACCESS_TOKEN}"
+  host: "http://localhost:8080" 
   timeout: 30.0
 
 # OpenAI Service

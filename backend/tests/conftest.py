@@ -5,6 +5,7 @@ Pytest configuration and shared fixtures for papermes backend tests.
 import os
 import sys
 from pathlib import Path
+
 import pytest
 
 # Add backend directory to Python path for config import
@@ -29,14 +30,13 @@ def firefly_env_check():
     """
     host = config.firefly.host or os.getenv("PAPERMES_FIREFLY_HOST")
     token = config.firefly.access_token or os.getenv("PAPERMES_FIREFLY_ACCESS_TOKEN")
-    
+
     if not host or not token:
         pytest.skip(
             "Firefly III environment not configured. Set PAPERMES_FIREFLY_HOST and PAPERMES_FIREFLY_ACCESS_TOKEN or configure in config.yml"
         )
-    
-    return {"host": host, "token": token}
 
+    return {"host": host, "token": token}
 
 
 # Pytest fixtures and utilities
@@ -49,6 +49,7 @@ def default_account_id(firefly_client):
     else:
         pytest.skip("No accounts available for testing")
 
+
 @pytest.fixture
 def sample_account_id(firefly_client):
     """Fixture that provides a sample account ID for testing."""
@@ -58,6 +59,7 @@ def sample_account_id(firefly_client):
     else:
         pytest.skip("No accounts available for testing")
 
+
 @pytest.fixture
 def firefly_client():
     """
@@ -66,8 +68,16 @@ def firefly_client():
     """
     try:
         from lib.firefly_client import FireflyClient
-        
-        with FireflyClient() as client:
+
+        # Check if config has the necessary values
+        if not config.firefly.host or not config.firefly.access_token:
+            pytest.skip("Firefly III not configured in config.yml")
+
+        with FireflyClient(
+            host=config.firefly.host,
+            access_token=config.firefly.access_token,
+            timeout=config.firefly.timeout,
+        ) as client:
             yield client
     except ImportError:
         pytest.skip("firefly_client module not available")
@@ -80,20 +90,18 @@ def firefly_client():
 def pytest_configure(config):
     """Configure pytest with custom markers and settings."""
     config.addinivalue_line(
-        "markers", "integration: mark test as an integration test requiring external services"
+        "markers",
+        "integration: mark test as an integration test requiring external services",
     )
-    config.addinivalue_line(
-        "markers", "unit: mark test as a unit test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
+    config.addinivalue_line("markers", "unit: mark test as a unit test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
 
 
 @pytest.fixture
 def testdata_dir() -> Path:
     """Get the testdata directory path."""
     return config.testdata_dir_path
+
 
 def pytest_collection_modifyitems(config, items):
     """
@@ -104,7 +112,7 @@ def pytest_collection_modifyitems(config, items):
         # Add integration marker to tests in integration directory
         if "integration" in str(item.fspath):
             item.add_marker(pytest.mark.integration)
-        
-        # Add unit marker to tests in unit directory  
+
+        # Add unit marker to tests in unit directory
         if "unit" in str(item.fspath):
             item.add_marker(pytest.mark.unit)

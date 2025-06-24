@@ -5,31 +5,18 @@ A Python client library for interacting with the Firefly III personal finance AP
 Supports account management and transaction creation using Personal Access Tokens.
 """
 
-import os
-import sys
 import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Union
-from datetime import date as Date, datetime
+from datetime import date as Date
+from datetime import datetime
 from decimal import Decimal
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-# Try to import config if available (for default values)
-try:
-    # Add backend directory to path for config import
-    backend_path = Path(__file__).parent.parent.parent
-    if str(backend_path) not in sys.path:
-        sys.path.insert(0, str(backend_path))
-    from config import get_config
-    config = get_config()
-    DEFAULT_TIMEOUT = config.http.timeout
-    DEFAULT_CURRENCY = config.app.default_currency
-except ImportError:
-    # Fallback if config is not available
-    DEFAULT_TIMEOUT = 30.0
-    DEFAULT_CURRENCY = "USD"
+# Default values
+DEFAULT_TIMEOUT = 30.0
+DEFAULT_CURRENCY = "USD"
 
 
 logger = logging.getLogger(__name__)
@@ -37,8 +24,13 @@ logger = logging.getLogger(__name__)
 
 class FireflyAPIError(Exception):
     """Base exception for Firefly III API errors."""
-    
-    def __init__(self, message: str, status_code: Optional[int] = None, response_data: Optional[Dict] = None):
+
+    def __init__(
+        self,
+        message: str,
+        status_code: Optional[int] = None,
+        response_data: Optional[Dict] = None,
+    ):
         super().__init__(message)
         self.status_code = status_code
         self.response_data = response_data
@@ -46,9 +38,9 @@ class FireflyAPIError(Exception):
 
 class AccountAttributes(BaseModel):
     """Account attributes from Firefly III API."""
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     name: str
     type: str
     account_role: Optional[str] = None
@@ -77,9 +69,9 @@ class AccountAttributes(BaseModel):
 
 class Account(BaseModel):
     """Firefly III Account model."""
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     id: str
     type: str = Field(default="accounts")
     attributes: AccountAttributes
@@ -87,7 +79,7 @@ class Account(BaseModel):
 
 class AccountsList(BaseModel):
     """Response model for accounts list."""
-    
+
     data: List[Account]
     meta: Optional[Dict[str, Any]] = None
     links: Optional[Dict[str, Any]] = None
@@ -95,9 +87,9 @@ class AccountsList(BaseModel):
 
 class TransactionSplit(BaseModel):
     """Individual transaction split within a transaction."""
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     type: str
     date: str
     amount: str
@@ -142,7 +134,7 @@ class TransactionSplit(BaseModel):
     payment_date: Optional[str] = None
     invoice_date: Optional[str] = None
 
-    @field_validator('amount', mode='before')
+    @field_validator("amount", mode="before")
     @classmethod
     def validate_amount(cls, v):
         if isinstance(v, (int, float, Decimal)):
@@ -152,18 +144,18 @@ class TransactionSplit(BaseModel):
 
 class TransactionAttributes(BaseModel):
     """Transaction attributes."""
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     group_title: Optional[str] = None
     transactions: List[TransactionSplit]
 
 
 class TransactionStore(BaseModel):
     """Request model for storing a new transaction."""
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     error_if_duplicate_hash: Optional[bool] = None
     apply_rules: Optional[bool] = None
     fire_webhooks: Optional[bool] = None
@@ -173,9 +165,9 @@ class TransactionStore(BaseModel):
 
 class Transaction(BaseModel):
     """Firefly III Transaction model."""
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     id: str
     type: str = Field(default="transactions")
     attributes: TransactionAttributes
@@ -183,7 +175,7 @@ class Transaction(BaseModel):
 
 class TransactionResponse(BaseModel):
     """Response model for transaction creation."""
-    
+
     data: Transaction
     meta: Optional[Dict[str, Any]] = None
     links: Optional[Dict[str, Any]] = None
@@ -192,100 +184,93 @@ class TransactionResponse(BaseModel):
 class FireflyClient:
     """
     Firefly III API Client
-    
+
     A client for interacting with the Firefly III REST API using Personal Access Tokens.
     """
-    
+
     def __init__(
-        self, 
-        host: Optional[str] = None, 
-        access_token: Optional[str] = None,
-        timeout: float = DEFAULT_TIMEOUT
+        self,
+        host: str,
+        access_token: str,
+        timeout: float = DEFAULT_TIMEOUT,
     ):
         """
         Initialize the Firefly III client.
-        
+
         Args:
-            host: Firefly III host URL. If None, reads from config or PAPERMES_FIREFLY_HOST env var.
-            access_token: Personal Access Token. If None, reads from config or PAPERMES_FIREFLY_ACCESS_TOKEN env var.
+            host: Firefly III host URL.
+            access_token: Personal Access Token.
             timeout: HTTP request timeout in seconds.
-        """        # Try to get from config first, then environment variables
-        try:
-            self.host = host or config.firefly.host or os.getenv("PAPERMES_FIREFLY_HOST")
-            self.access_token = access_token or config.firefly.access_token or os.getenv("PAPERMES_FIREFLY_ACCESS_TOKEN")
-        except (NameError, AttributeError):
-            # Fallback if config is not available
-            self.host = host or os.getenv("PAPERMES_FIREFLY_HOST")
-            self.access_token = access_token or os.getenv("PAPERMES_FIREFLY_ACCESS_TOKEN")
-        
+        """
+        self.host = host
+        self.access_token = access_token
+
         if not self.host:
-            raise ValueError("Firefly III host must be provided via host parameter, config.yml, or PAPERMES_FIREFLY_HOST environment variable")
-        
+            raise ValueError("Firefly III host must be provided")
+
         if not self.access_token:
-            raise ValueError("Access token must be provided via access_token parameter, config.yml, or PAPERMES_FIREFLY_ACCESS_TOKEN environment variable")
-        
+            raise ValueError("Access token must be provided")
+
         # Ensure host doesn't end with slash
         self.host = self.host.rstrip("/")
-        
+
         # Set up HTTP client with default headers
         self.client = httpx.Client(
             timeout=timeout,
+            base_url=f"{self.host}/api/v1",
             headers={
                 "Authorization": f"Bearer {self.access_token}",
                 "Accept": "application/vnd.api+json",
                 "Content-Type": "application/json",
-            }
+            },
         )
-    
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
-    
+
     def close(self):
         """Close the HTTP client."""
         self.client.close()
-    
+
     def _make_request(
-        self, 
-        method: str, 
-        endpoint: str, 
+        self,
+        method: str,
+        endpoint: str,
         data: Optional[Dict] = None,
-        params: Optional[Dict] = None
+        params: Optional[Dict] = None,
     ) -> Dict[str, Any]:
         """
         Make an HTTP request to the Firefly III API.
-        
+
         Args:
             method: HTTP method (GET, POST, etc.)
             endpoint: API endpoint path
             data: Request body data for POST/PUT requests
             params: Query parameters
-            
+
         Returns:
             JSON response data
-            
+
         Raises:
             FireflyAPIError: If the API returns an error
         """
         url = f"{self.host}/api/v1{endpoint}"
-        
+
         try:
             response = self.client.request(
-                method=method,
-                url=url,
-                json=data,
-                params=params
+                method=method, url=url, json=data, params=params
             )
-            
+
             # Log request details for debugging
             logger.debug(f"{method} {url} -> {response.status_code}")
-            
+
             if response.status_code >= 400:
                 error_message = f"HTTP {response.status_code}"
                 error_data = None
-                
+
                 try:
                     error_data = response.json()
                     if "message" in error_data:
@@ -294,34 +279,34 @@ class FireflyClient:
                         error_message = error_data["error"]
                 except Exception:
                     error_message = response.text or error_message
-                
+
                 raise FireflyAPIError(
                     message=error_message,
                     status_code=response.status_code,
-                    response_data=error_data
+                    response_data=error_data,
                 )
-            
+
             return response.json()
-            
+
         except httpx.RequestError as e:
             raise FireflyAPIError(f"Request failed: {str(e)}")
         except httpx.TimeoutException:
             raise FireflyAPIError("Request timed out")
-    
+
     def get_accounts(
-        self, 
+        self,
         type_filter: Optional[str] = None,
         page: Optional[int] = None,
-        limit: Optional[int] = None
+        limit: Optional[int] = None,
     ) -> AccountsList:
         """
         Retrieve all accounts from Firefly III.
-        
+
         Args:
             type_filter: Filter by account type (asset, expense, revenue, liability, etc.)
             page: Page number for pagination
             limit: Number of accounts per page
-            
+
         Returns:
             AccountsList object containing account data
         """
@@ -332,41 +317,41 @@ class FireflyClient:
             params["page"] = page
         if limit is not None:
             params["limit"] = limit
-        
+
         response_data = self._make_request("GET", "/accounts", params=params)
         return AccountsList(**response_data)
-    
+
     def get_account(self, account_id: str) -> Account:
         """
         Retrieve a specific account by ID.
-        
+
         Args:
             account_id: The account ID
-            
+
         Returns:
             Account object
         """
         response_data = self._make_request("GET", f"/accounts/{account_id}")
         return Account(**response_data["data"])
-    
+
     def store_transaction(
         self,
         transactions: List[TransactionSplit],
         group_title: Optional[str] = None,
         error_if_duplicate_hash: bool = True,
         apply_rules: bool = True,
-        fire_webhooks: bool = True
+        fire_webhooks: bool = True,
     ) -> TransactionResponse:
         """
         Store a new transaction in Firefly III.
-        
+
         Args:
             transactions: List of transaction splits
             group_title: Optional title for the transaction group
             error_if_duplicate_hash: Whether to error if duplicate hash detected
             apply_rules: Whether to apply rules to the transaction
             fire_webhooks: Whether to fire webhooks for the transaction
-            
+
         Returns:
             TransactionResponse object containing the created transaction
         """
@@ -375,27 +360,30 @@ class FireflyClient:
             apply_rules=apply_rules,
             fire_webhooks=fire_webhooks,
             group_title=group_title,
-            transactions=transactions
+            transactions=transactions,
         )
-        
-        response_data = self._make_request("POST", "/transactions", data=transaction_data.model_dump(exclude_none=True))
+
+        response_data = self._make_request(
+            "POST", "/transactions", data=transaction_data.model_dump(exclude_none=True)
+        )
         return TransactionResponse(**response_data)
-    
+
     def create_withdrawal(
         self,
         amount: Union[str, float, Decimal],
         description: str,
-        source_account_id: str,        destination_account_name: str,
+        source_account_id: str,
+        destination_account_name: str,
         date: Optional[Union[str, Date]] = None,
         category_name: Optional[str] = None,
         budget_name: Optional[str] = None,
         notes: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        **kwargs
+        **kwargs,
     ) -> TransactionResponse:
         """
         Create a withdrawal transaction (expense).
-        
+
         Args:
             amount: Transaction amount (positive number)
             description: Transaction description
@@ -410,10 +398,10 @@ class FireflyClient:
             TransactionResponse object
         """
         if date is None:
-            date = datetime.now().date()
+            date = datetime.now().date().isoformat()
         elif isinstance(date, Date):
             date = date.isoformat()
-        
+
         transaction_split = TransactionSplit(
             type="withdrawal",
             date=date,
@@ -425,25 +413,26 @@ class FireflyClient:
             budget_name=budget_name,
             notes=notes,
             tags=tags,
-            **kwargs
+            **kwargs,
         )
-        
+
         return self.store_transaction([transaction_split])
-    
+
     def create_deposit(
         self,
         amount: Union[str, float, Decimal],
         description: str,
-        source_account_name: str,        destination_account_id: str,
+        source_account_name: str,
+        destination_account_id: str,
         date: Optional[Union[str, Date]] = None,
         category_name: Optional[str] = None,
         notes: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        **kwargs
+        **kwargs,
     ) -> TransactionResponse:
         """
         Create a deposit transaction (income).
-        
+
         Args:
             amount: Transaction amount (positive number)
             description: Transaction description
@@ -461,7 +450,7 @@ class FireflyClient:
             date = datetime.now().date()
         elif isinstance(date, Date):
             date = date.isoformat()
-        
+
         transaction_split = TransactionSplit(
             type="deposit",
             date=date,
@@ -472,24 +461,25 @@ class FireflyClient:
             category_name=category_name,
             notes=notes,
             tags=tags,
-            **kwargs
+            **kwargs,
         )
-        
+
         return self.store_transaction([transaction_split])
-    
+
     def create_transfer(
         self,
         amount: Union[str, float, Decimal],
         description: str,
-        source_account_id: str,        destination_account_id: str,
+        source_account_id: str,
+        destination_account_id: str,
         date: Optional[Union[str, Date]] = None,
         notes: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        **kwargs
+        **kwargs,
     ) -> TransactionResponse:
         """
         Create a transfer transaction between accounts.
-        
+
         Args:
             amount: Transaction amount (positive number)
             description: Transaction description
@@ -506,7 +496,7 @@ class FireflyClient:
             date = datetime.now().date()
         elif isinstance(date, Date):
             date = date.isoformat()
-        
+
         transaction_split = TransactionSplit(
             type="transfer",
             date=date,
@@ -516,21 +506,45 @@ class FireflyClient:
             destination_id=destination_account_id,
             notes=notes,
             tags=tags,
-            **kwargs
+            **kwargs,
         )
-        
+
         return self.store_transaction([transaction_split])
+
+    def delete_transaction(self, transaction_group_id: str) -> None:
+        """
+        Delete a transaction group by ID.
+
+        Args:
+            transaction_group_id: The ID of the transaction group to delete
+
+        Raises:
+            FireflyAPIError: If the API returns an error
+        """
+        self._make_request("DELETE", f"/transactions/{transaction_group_id}")
+
+    def delete_transaction_journal(self, transaction_journal_id: str) -> None:
+        """
+        Delete a specific transaction journal by ID.
+
+        Args:
+            transaction_journal_id: The ID of the transaction journal to delete
+
+        Raises:
+            FireflyAPIError: If the API returns an error
+        """
+        self._make_request("DELETE", f"/transaction-journals/{transaction_journal_id}")
 
 
 # Convenience function for creating a client
-def create_client(host: Optional[str] = None, access_token: Optional[str] = None) -> FireflyClient:
+def create_client(host: str, access_token: str) -> FireflyClient:
     """
     Create a Firefly III client instance.
-    
+
     Args:
-        host: Firefly III host URL. If None, reads from PAPERMES_FIREFLY_HOST env var.
-        access_token: Personal Access Token. If None, reads from PAPERMES_FIREFLY_ACCESS_TOKEN env var.
-        
+        host: Firefly III host URL.
+        access_token: Personal Access Token.
+
     Returns:
         FireflyClient instance
     """
