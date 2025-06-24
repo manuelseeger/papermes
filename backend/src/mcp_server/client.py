@@ -79,11 +79,23 @@ async def message_handler(
     else:
         logger.info("SERVER_MESSAGE: %s", message)
 
-def analyze_receipt(base64_image: str, accounts: list[str], tools):
-
+async def analyze_receipt(base64_image: str, accounts: list[dict], tools, session: ClientSession):
+    """Analyze receipt using MCP prompts"""
+    
     model_name = "gpt-4.1"
     
     functions = [convert_to_llm_tool(tool) for tool in tools]
+
+    # Get developer context prompt
+    developer_prompt_result = await session.get_prompt(
+        "developer_bookkeeping_context", 
+        arguments={"accounts": accounts}
+    )
+    developer_content = developer_prompt_result.messages[0].content
+    
+    # Get user analysis prompt
+    user_prompt_result = await session.get_prompt("user_analyze_receipt")
+    user_text = user_prompt_result.messages[0].content 
 
     print("CALLING LLM")
     response = client.responses.create(
@@ -92,12 +104,12 @@ def analyze_receipt(base64_image: str, accounts: list[str], tools):
         input=[
             {
                 "role": "developer",
-                "content": f"You create transaction in a bookeeping system. You can use the tools provided to you to create transactions. Here are the available accounts:\n\n{json.dumps(accounts, indent=2)}\n\n",
+                "content": developer_content,
             },
             {
                 "role": "user",
                 "content": [
-                    { "type": "input_text", "text": "Analyze this image. If you find this is a receipt, determine for each line item: transaction type, source and destination accounts. If you can't find a suitable destination account, use account 'Unknown'. Create a new transaction group with one transaction for each line item." },
+                    { "type": "input_text", "text": user_text },
                     {
                         "type": "input_image",
                         "image_url": f"data:image/jpeg;base64,{base64_image}",
@@ -163,15 +175,19 @@ async def main():
             resources = await session.list_resources()
             print("LISTING RESOURCES")
             for resource in resources:
-                print("Resource: ", resource)
-
-            # List available tools
+                print("Resource: ", resource)            # List available tools
             tools = await session.list_tools()
             print("LISTING TOOLS")
             
             for tool in tools.tools:
                 print("Tool: ", tool.name)
                 print("Tool", tool.inputSchema["properties"])
+
+            # List available prompts
+            prompts = await session.list_prompts()
+            print("LISTING PROMPTS")
+            for prompt in prompts.prompts:
+                print("Prompt: ", prompt.name)
 
             # Get accounts from Firefly III
             account_resource = await session.read_resource("firefly://accounts")
@@ -182,23 +198,21 @@ async def main():
                     logger.error(f"Unexpected MIME type: {account.mimeType}")
                     continue
                 accounts = json.loads(account.text)
-            
-            # Analyze a receipt image
+              # Analyze a receipt image
             # Find the testdata directory relative to this script
             script_dir = Path(__file__).parent
             testdata_dir = script_dir.parent.parent.parent / "testdata"
-
+            
             image_path = testdata_dir / "photos" / "receipts" / "Shopping Aldi.jpg"
             if not image_path.exists():
                 logger.error(f"Image file not found at {image_path}")
                 return
-              # Encode image to base64
+            # Encode image to base64
             base64_image = encode_image_to_base64(image_path)
             logger.info(f"Analyzing image: {image_path.name}")
 
-            available_accounts = [account['name'] for account in accounts]
-
-            functions_to_call = analyze_receipt(base64_image, available_accounts, tools.tools)
+            # Use the new prompt-based analysis
+            functions_to_call = await analyze_receipt(base64_image, accounts, tools.tools, session)
 
             for function in functions_to_call:
                 result = await session.call_tool(function["name"], arguments=function["args"])

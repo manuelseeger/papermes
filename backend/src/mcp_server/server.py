@@ -6,6 +6,9 @@ from decimal import Decimal
 from pydantic import BaseModel
 from fastmcp import FastMCP
 from datetime import datetime
+import jinja2
+
+
 # Add lib directory to path for imports
 lib_path = Path(__file__).parent.parent / "lib"
 sys.path.insert(0, str(lib_path))
@@ -18,6 +21,36 @@ logger = logging.getLogger(__name__)
 
 # Initialize FastMCP server
 mcp = FastMCP("papermes-mcp-server", host="localhost", port=8100)
+
+# Initialize Jinja2 environment for prompt templates
+prompts_dir = Path(__file__).parent / "prompts"
+jinja_env = jinja2.Environment(
+    loader=jinja2.FileSystemLoader(prompts_dir),
+    autoescape=False,  # We're working with text prompts, not HTML
+    trim_blocks=True,
+    lstrip_blocks=True
+)
+
+def render_prompt_template(template_name: str, **kwargs) -> str:
+    """
+    Render a Jinja2 template with the given parameters.
+    
+    Args:
+        template_name: Name of the template file (with .jinja2 extension)
+        **kwargs: Variables to pass to the template
+        
+    Returns:
+        str: Rendered template string
+    """
+    try:
+        template = jinja_env.get_template(f"{template_name}.jinja2")
+        return template.render(**kwargs)
+    except jinja2.TemplateNotFound:
+        logger.error(f"Template not found: {template_name}")
+        raise
+    except jinja2.TemplateError as e:
+        logger.error(f"Template rendering error: {e}")
+        raise
 
 
 class Account(BaseModel):
@@ -184,6 +217,34 @@ async def create_transactions(
             "success": False,
             "error": f"Error creating transaction: {e}"
         }
+
+
+@mcp.prompt()
+async def developer_bookkeeping_context(accounts: List[dict]) -> str:
+    """
+    Generate the developer context prompt for bookkeeping system.
+    
+    Args:
+        accounts: List of account dictionaries
+        
+    Returns:
+        str: Rendered developer context prompt
+    """
+    return render_prompt_template(
+        "developer_bookkeeping_context",
+        accounts=accounts
+    )
+
+
+@mcp.prompt()
+async def user_analyze_receipt() -> str:
+    """
+    Generate the user prompt for analyzing receipt images.
+    
+    Returns:
+        str: Rendered user prompt for receipt analysis
+    """
+    return render_prompt_template("user_analyze_receipt")
 
 
 def main():

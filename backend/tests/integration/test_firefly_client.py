@@ -443,32 +443,6 @@ class TestFireflyClientWithoutEnvironment:
         assert client.access_token == "test_token"
 
 
-# Pytest fixtures and utilities
-@pytest.fixture
-def firefly_client():
-    """Fixture that provides a Firefly client for tests."""
-    with FireflyClient() as client:
-        yield client
-
-
-@pytest.fixture
-def default_account_id(firefly_client):
-    """Fixture that provides the default account ID for testing."""
-    accounts = firefly_client.get_accounts(type_filter="asset")
-    if accounts.data:
-        return accounts.data[0].id
-    else:
-        pytest.skip("No accounts available for testing")
-
-@pytest.fixture
-def sample_account_id(firefly_client):
-    """Fixture that provides a sample account ID for testing."""
-    accounts = firefly_client.get_accounts()
-    if accounts.data:
-        return accounts.data[0].id
-    else:
-        pytest.skip("No accounts available for testing")
-
 
 # Integration test markers
 pytestmark = pytest.mark.integration

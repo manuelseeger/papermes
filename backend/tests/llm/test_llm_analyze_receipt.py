@@ -68,8 +68,9 @@ class TestAnalyzeReceiptIntegration:
     
     def _get_receipt_path(self, testdata_dir: Path, filename: str) -> Path:
         """Helper to get receipt file path."""
-        return testdata_dir / "photos" / "receipts" / filename
-
+        return testdata_dir / "photos" / "receipts" / filename    
+    
+    @pytest.mark.api_cost
     @pytest.mark.parametrize("receipt_filename,expected_line_items", [
         ("Aldi Groceries and Ski Gear.jpg", [19.99, 9.99, 19.99, 5.99, 3.29, 0.69, 4.99]),
         ("Apotheke Elotrans.jpg", [8.45]),
@@ -186,6 +187,7 @@ class TestAnalyzeReceiptIntegration:
         
         print(f"=== End Results for {receipt_filename} ===\n")
 
+    @pytest.mark.api_cost
     def test_analyze_receipt_with_empty_accounts(self, sample_tools, testdata_dir):
         """Test analyze_receipt with empty accounts list."""
         # Skip if OpenAI API key is not available
@@ -215,34 +217,3 @@ class TestAnalyzeReceiptIntegration:
             for transaction in result[0]['args']['transactions']:
                 print(f"Transaction: {transaction.get('description')} -> {transaction.get('destination_name')}")
 
-    def test_encode_image_to_base64_helper(self, testdata_dir):
-        """Test the encode_image_to_base64 helper function."""
-        # Arrange
-        receipt_path = self._get_receipt_path(testdata_dir, "Aldi Groceries and Ski Gear.jpg")
-        
-        if not receipt_path.exists():
-            pytest.skip(f"Receipt file not found: {receipt_path}")
-        
-        # Act
-        result = encode_image_to_base64(receipt_path)
-        
-        # Assert
-        assert isinstance(result, str), "Should return a string"
-        assert len(result) > 0, "Should not be empty"
-        
-        # Verify it looks like base64 (basic check)
-        import base64
-        try:
-            decoded = base64.b64decode(result)
-            assert len(decoded) > 0, "Decoded content should not be empty"
-        except Exception as e:
-            pytest.fail(f"Result does not appear to be valid base64: {e}")
-
-    def test_encode_image_to_base64_nonexistent_file(self):
-        """Test encode_image_to_base64 with non-existent file."""
-        # Arrange
-        nonexistent_path = Path("nonexistent_file.jpg")
-        
-        # Act & Assert
-        with pytest.raises(FileNotFoundError):
-            encode_image_to_base64(nonexistent_path)

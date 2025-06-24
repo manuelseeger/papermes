@@ -29,6 +29,26 @@ def firefly_env_check():
     return {"host": host, "token": token}
 
 
+
+# Pytest fixtures and utilities
+@pytest.fixture
+def default_account_id(firefly_client):
+    """Fixture that provides the default account ID for testing."""
+    accounts = firefly_client.get_accounts(type_filter="asset")
+    if accounts.data:
+        return accounts.data[0].id
+    else:
+        pytest.skip("No accounts available for testing")
+
+@pytest.fixture
+def sample_account_id(firefly_client):
+    """Fixture that provides a sample account ID for testing."""
+    accounts = firefly_client.get_accounts()
+    if accounts.data:
+        return accounts.data[0].id
+    else:
+        pytest.skip("No accounts available for testing")
+
 @pytest.fixture
 def firefly_client():
     """
@@ -46,19 +66,6 @@ def firefly_client():
         if "environment variable" in str(e):
             pytest.skip(f"Firefly III not configured: {e}")
         raise
-
-
-@pytest.fixture
-def sample_account_id(firefly_client):
-    """
-    Fixture that provides a sample account ID for testing.
-    Uses the first available account from the Firefly III instance.
-    """
-    accounts = firefly_client.get_accounts()
-    if accounts.data:
-        return accounts.data[0].id
-    else:
-        pytest.skip("No accounts available for testing")
 
 
 def pytest_configure(config):
