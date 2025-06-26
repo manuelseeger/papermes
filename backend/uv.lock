@@ -415,12 +415,10 @@ source = { editable = "packages/mcp_server" }
 dependencies = [
     { name = "fastmcp" },
     { name = "firefly-client" },
-    { name = "httpx" },
     { name = "jinja2" },
     { name = "openai" },
     { name = "papermes-shared" },
     { name = "pydantic" },
-    { name = "truststore" },
 ]
 
 [package.dev-dependencies]
@@ -433,12 +431,10 @@ dev = [
 requires-dist = [
     { name = "fastmcp", specifier = ">=2.8.1" },
     { name = "firefly-client", editable = "packages/firefly_client" },
-    { name = "httpx", specifier = ">=0.25.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "openai", specifier = ">=1.0.0" },
     { name = "papermes-shared", editable = "packages/papermes-shared" },
     { name = "pydantic", specifier = ">=2.0.0" },
-    { name = "truststore", specifier = ">=0.10.1" },
 ]
 
 [package.metadata.requires-dev]

@@ -4,7 +4,8 @@ MCP Server Package Entry Point
 
 This allows running the MCP server with: python -m mcp_server
 """
-from .server import main
+
+from .server import run_server
 
 if __name__ == "__main__":
-    main()
+    run_server()

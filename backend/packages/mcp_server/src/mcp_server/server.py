@@ -250,7 +250,7 @@ async def user_analyze_receipt() -> str:
     return render_prompt_template("user_analyze_receipt")
 
 
-def main():
+def run_server():
     """Main entry point for the server"""
     try:
         logger.info("Starting Papermes MCP Server...")
