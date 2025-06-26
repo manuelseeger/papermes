@@ -1,0 +1,32 @@
+[project]
+name = "firefly-client"
+version = "0.1.0"
+description = "A Python client library for interacting with the Firefly III personal finance API"
+readme = "README.md"
+authors = [
+    { name = "manuelseeger", email = "mail@manuelseeger.de" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "pydantic>=2.11.7",
+]
+keywords = ["firefly", "finance", "api", "client"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Office/Business :: Financial",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "dotenv>=0.9.9",
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+]

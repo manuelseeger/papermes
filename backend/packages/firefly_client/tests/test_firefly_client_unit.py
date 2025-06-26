@@ -6,7 +6,7 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import Mock, patch
 
-from lib.firefly_client import (
+from firefly_client import (
     Account,
     AccountAttributes,
     FireflyAPIError,
@@ -56,7 +56,7 @@ class TestFireflyClientUnit:
 
     def test_convenience_function(self):
         """Test the create_client convenience function."""
-        from lib.firefly_client import create_client
+        from firefly_client import create_client
 
         client = create_client(host="http://test.com", access_token="test_token")
 
@@ -240,7 +240,7 @@ class TestTransactionHelpers:
         client = FireflyClient(host="http://test.com", access_token="test")
         client.store_transaction = mock_client.store_transaction
 
-        with patch("lib.firefly_client.datetime") as mock_datetime:
+        with patch("firefly_client.datetime") as mock_datetime:
             # Mock the date return properly - return a date object
             mock_datetime.now.return_value.date.return_value = date(2025, 6, 23)
 

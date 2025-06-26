@@ -1,23 +1,15 @@
 import logging
-import sys
 from datetime import datetime
 from decimal import Decimal
-from pathlib import Path
 from typing import List, Optional, Union
 
 import jinja2
-from fastmcp import FastMCP
-from pydantic import BaseModel
-
-# Setup paths and imports
-backend_path = Path(__file__).parent.parent.parent
-lib_path = Path(__file__).parent.parent / "lib"
-sys.path.insert(0, str(backend_path))
-sys.path.insert(0, str(lib_path))
 
 # Import after path setup
-from config import get_config  # noqa: E402
-from firefly_client import FireflyAPIError, FireflyClient  # noqa: E402
+from config import get_config
+from fastmcp import FastMCP
+from firefly_client import FireflyAPIError, FireflyClient
+from pydantic import BaseModel
 
 # Get configuration
 config = get_config()

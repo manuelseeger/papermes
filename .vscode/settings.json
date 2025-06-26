@@ -13,11 +13,11 @@
     "python.envFile": "${workspaceFolder}/backend/.env",
     "python.analysis.extraPaths": [
         "${workspaceFolder}/backend/src"
-    ],
-    "python.testing.pytestEnabled": true,
+    ],    "python.testing.pytestEnabled": true,
     "python.testing.pytestPath": "${workspaceFolder}/backend/.venv/Scripts/pytest.exe",
     "python.testing.pytestArgs": [
-        "tests"
+        "tests",
+        "packages/firefly_client/tests"
     ],
     "python.testing.cwd": "${workspaceFolder}/backend",
     "files.watcherExclude": {

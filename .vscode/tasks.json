@@ -111,7 +111,7 @@
 			"options": {
 				"cwd": "${workspaceFolder}/backend",
 				"env": {
-					"PYTHONPATH": "${workspaceFolder}/backend/src;${workspaceFolder}/backend/src/lib"
+					"PYTHONPATH": "${workspaceFolder}/backend/src"
 				}
 			},
 			"presentation": {

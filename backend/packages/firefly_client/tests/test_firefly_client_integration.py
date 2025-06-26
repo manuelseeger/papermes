@@ -26,7 +26,7 @@ import os
 from decimal import Decimal
 
 import pytest
-from lib.firefly_client import FireflyAPIError, FireflyClient
+from firefly_client import FireflyAPIError, FireflyClient
 
 
 class TestFireflyClient:
@@ -281,7 +281,9 @@ class TestFireflyClientTransactionCreation:
                 f"   ⚠️  Failed to clean up transaction {transaction.data.id}: {e}"
             ) @ pytest.mark.creates_data
 
-    def test_create_deposit_transaction(self, firefly_client, default_account_id):
+    def test_create_deposit_transaction(
+        self, firefly_client: FireflyClient, default_account_id
+    ):
         """
         Test creating a deposit transaction.
         ⚠️  WARNING: This test creates real transaction data in Firefly III!
@@ -409,7 +411,7 @@ class TestFireflyClientTransactionCreation:
         """
         from datetime import datetime
 
-        from lib.firefly_client import TransactionSplit
+        from firefly_client import TransactionSplit
 
         # Create multiple transaction splits for a shopping trip
         transaction_splits = [
@@ -563,7 +565,7 @@ class TestFireflyClientWithoutEnvironment:
 
     def test_convenience_function(self):
         """Test the create_client convenience function."""
-        from lib.firefly_client import create_client
+        from firefly_client import create_client
 
         client = create_client(host="http://test.com", access_token="test_token")
 

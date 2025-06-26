@@ -21,56 +21,6 @@ from config import get_config  # noqa: E402
 config = get_config()
 
 
-# Pytest fixtures and utilities
-@pytest.fixture
-def default_account_id(firefly_client):
-    """Fixture that provides the default account ID for testing."""
-    accounts = firefly_client.get_accounts(type_filter="asset")
-    accounts = [a for a in accounts.data if a.attributes.active]
-    if accounts:
-        return accounts[0].id
-    else:
-        pytest.skip("No accounts available for testing")
-
-
-@pytest.fixture
-def sample_expense_account_id(firefly_client):
-    """Fixture that provides a sample expense account ID for testing."""
-    accounts = firefly_client.get_accounts(type_filter="expense")
-    accounts = [a for a in accounts.data if a.attributes.active]
-    if accounts:
-        return accounts[0].id
-    else:
-        pytest.skip("No accounts available for testing")
-
-
-@pytest.fixture
-def firefly_client():
-    """
-    Fixture that provides a Firefly client for tests.
-    Automatically skips if environment is not configured.
-    """
-    try:
-        from lib.firefly_client import FireflyClient
-
-        # Check if config has the necessary values
-        if not config.firefly.host or not config.firefly.access_token:
-            pytest.skip("Firefly III not configured in config.yml")
-
-        with FireflyClient(
-            host=config.firefly.host,
-            access_token=config.firefly.access_token,
-            timeout=config.firefly.timeout,
-        ) as client:
-            yield client
-    except ImportError:
-        pytest.skip("firefly_client module not available")
-    except ValueError as e:
-        if "environment variable" in str(e):
-            pytest.skip(f"Firefly III not configured: {e}")
-        raise
-
-
 def pytest_configure(config):
     """Configure pytest with custom markers and settings."""
     config.addinivalue_line(
