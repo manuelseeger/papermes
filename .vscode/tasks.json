@@ -104,15 +104,12 @@
 			"type": "shell",
 			"command": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
 			"args": [
-				"${workspaceFolder}/backend/src/mcp_server/server.py"
+				"-m", "mcp_server.server"
 			],
 			"group": "build",
 			"isBackground": true,
 			"options": {
-				"cwd": "${workspaceFolder}/backend",
-				"env": {
-					"PYTHONPATH": "${workspaceFolder}/backend/src"
-				}
+				"cwd": "${workspaceFolder}/backend"
 			},
 			"presentation": {
 				"echo": true,

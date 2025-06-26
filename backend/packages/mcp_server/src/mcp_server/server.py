@@ -4,15 +4,11 @@ from decimal import Decimal
 from typing import List, Optional, Union
 
 import jinja2
-
-# Import after path setup
-from config import get_config
 from fastmcp import FastMCP
 from firefly_client import FireflyAPIError, FireflyClient
 from pydantic import BaseModel
 
-# Get configuration
-config = get_config()
+from .config import config
 
 # Set up logging using config
 logging.basicConfig(
@@ -23,13 +19,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Initialize FastMCP server using config
-mcp = FastMCP(
-    config.mcp_server.name, host=config.mcp_server.host, port=config.mcp_server.port
-)
+mcp = FastMCP(config.mcp_server.name)
 
 # Initialize Jinja2 environment for prompt templates using config
 jinja_env = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(config.prompts_dir_path),
+    loader=jinja2.FileSystemLoader(config.templates.prompts_dir),
     autoescape=config.templates.autoescape,
     trim_blocks=config.templates.trim_blocks,
     lstrip_blocks=config.templates.lstrip_blocks,
@@ -261,12 +255,11 @@ def main():
     try:
         logger.info("Starting Papermes MCP Server...")
         # Use run() with transport from config
-        mcp.run(transport=config.mcp_server.transport)
+        mcp.run(
+            transport=config.mcp_server.transport,
+            host=config.mcp_server.host,
+            port=config.mcp_server.port,
+        )
     except Exception as e:
         logger.error(f"Error starting MCP server: {e}")
         raise
-
-
-if __name__ == "__main__":
-    # Use the main function directly
-    main()

@@ -1,0 +1,38 @@
+[project]
+name = "mcp-server"
+version = "0.1.0"
+description = "A Model Context Protocol (MCP) server for document management and receipt analysis"
+readme = "README.md"
+authors = [
+    { name = "manuelseeger", email = "mail@manuelseeger.de" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastmcp>=2.8.1",
+    "jinja2>=3.1.6",
+    "pydantic>=2.0.0",
+    "openai>=1.0.0",
+    "firefly-client",
+    "papermes-shared",
+]
+keywords = ["mcp", "model-context-protocol", "document-management", "receipt-analysis"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Office/Business :: Financial",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.0.0",
+]
+
+[tool.uv.sources]
+papermes-shared = { workspace = true }

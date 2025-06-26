@@ -58,14 +58,11 @@
             "name": "Run MCP Server Only",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/backend/src/mcp_server/server.py",
+            "module": "mcp_server",
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}/backend",
+            "cwd": "${workspaceFolder}/backend/packages/mcp_server",
             "python": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
-            "envFile": "${workspaceFolder}/backend/.env",
-            "env": {
-                "PYTHONPATH": "${workspaceFolder}/backend/src"
-            }
+            "envFile": "${workspaceFolder}/backend/.env"
         },
         {
             "name": "Debug Current Python File (with Services)",

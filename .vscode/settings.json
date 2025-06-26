@@ -16,8 +16,10 @@
     ],    "python.testing.pytestEnabled": true,
     "python.testing.pytestPath": "${workspaceFolder}/backend/.venv/Scripts/pytest.exe",
     "python.testing.pytestArgs": [
-        "tests",
-        "packages/firefly_client/tests"
+        
+        "packages/firefly_client/tests",
+        "packages/mcp_server/tests",
+        "packages/papermes-shared/tests"
     ],
     "python.testing.cwd": "${workspaceFolder}/backend",
     "files.watcherExclude": {

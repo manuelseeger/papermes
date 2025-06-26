@@ -1,40 +1,20 @@
-# client.py
 import asyncio
 import base64
 import json
 import logging
-import ssl
-import sys
 from pathlib import Path
 
-import httpx
 import mcp.types as types
-import truststore
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 from mcp.shared.session import RequestResponder
 from openai import OpenAI
+from papermes_shared.shared import http_client
 
-# Add backend directory to path for config import
-backend_path = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(backend_path))
+# Import dependencies - these will be handled by the package system
+from .config import config
 
-from config import get_config  # noqa: E402
-
-# Get configuration
-config = get_config()
-
-ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-http_client = httpx.Client(verify=ssl_context)
-
-# Initialize OpenAI client using config
-api_key = config.openai.api_key
-if not api_key:
-    raise ValueError(
-        "OpenAI API key not configured. Set OPENAI_API_KEY environment variable or config.yml"
-    )
-
-client = OpenAI(api_key=api_key, http_client=http_client)
+client = OpenAI(api_key=config.openai.api_key, http_client=http_client)
 
 # Use pricing from config
 gpt_prompt_pricing = config.openai.prompt_token_cost
@@ -54,10 +34,6 @@ logging.basicConfig(
     datefmt=config.app.log_date_format,
 )
 logger = logging.getLogger("mcp_client")
-
-
-# Use port from config
-port = config.mcp_server.port
 
 
 class LoggingCollector:
@@ -170,7 +146,9 @@ def convert_to_llm_tool(tool: types.Tool):
 
 async def main():
     logger.info("Starting client...")
-    async with streamablehttp_client(f"http://localhost:{port}/mcp") as (
+    async with streamablehttp_client(
+        f"http://{config.mcp_server.host}:{config.mcp_server.port}/mcp"
+    ) as (
         read_stream,
         write_stream,
         session_callback,

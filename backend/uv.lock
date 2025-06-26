@@ -4,7 +4,9 @@ requires-python = ">=3.13"
 [manifest]
 members = [
     "firefly-client",
+    "mcp-server",
     "papermes",
+    "papermes-shared",
 ]
 
 [[package]]
@@ -407,6 +409,45 @@ wheels = [
 ]
 
 [[package]]
+name = "mcp-server"
+version = "0.1.0"
+source = { editable = "packages/mcp_server" }
+dependencies = [
+    { name = "fastmcp" },
+    { name = "firefly-client" },
+    { name = "httpx" },
+    { name = "jinja2" },
+    { name = "openai" },
+    { name = "papermes-shared" },
+    { name = "pydantic" },
+    { name = "truststore" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "fastmcp", specifier = ">=2.8.1" },
+    { name = "firefly-client", editable = "packages/firefly_client" },
+    { name = "httpx", specifier = ">=0.25.0" },
+    { name = "jinja2", specifier = ">=3.1.6" },
+    { name = "openai", specifier = ">=1.0.0" },
+    { name = "papermes-shared", editable = "packages/papermes-shared" },
+    { name = "pydantic", specifier = ">=2.0.0" },
+    { name = "truststore", specifier = ">=0.10.1" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pytest-asyncio", specifier = ">=1.0.0" },
+]
+
+[[package]]
 name = "mdurl"
 version = "0.1.2"
 source = { registry = "https://pypi.org/simple" }
@@ -465,6 +506,7 @@ dependencies = [
     { name = "firefly-client" },
     { name = "httpx" },
     { name = "jinja2" },
+    { name = "mcp-server" },
     { name = "openai" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -487,6 +529,7 @@ requires-dist = [
     { name = "firefly-client", editable = "packages/firefly_client" },
     { name = "httpx", specifier = ">=0.25.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
+    { name = "mcp-server", editable = "packages/mcp_server" },
     { name = "openai", specifier = ">=1.0.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
     { name = "pydantic-settings", specifier = ">=2.10.0" },
@@ -500,6 +543,25 @@ requires-dist = [
 dev = [
     { name = "pytest", specifier = ">=8.4.1" },
     { name = "pytest-asyncio", specifier = ">=1.0.0" },
+]
+
+[[package]]
+name = "papermes-shared"
+version = "0.1.0"
+source = { editable = "packages/papermes-shared" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic-settings" },
+    { name = "pyyaml" },
+    { name = "truststore" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pydantic-settings", specifier = ">=2.10.0" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "truststore", specifier = ">=0.10.1" },
 ]
 
 [[package]]
