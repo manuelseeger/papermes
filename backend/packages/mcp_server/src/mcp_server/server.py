@@ -1,6 +1,8 @@
 import logging
+from contextlib import contextmanager
 from datetime import datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import List, Optional, Union
 
 import jinja2
@@ -23,7 +25,7 @@ mcp = FastMCP(config.mcp_server.name)
 
 # Initialize Jinja2 environment for prompt templates using config
 jinja_env = jinja2.Environment(
-    loader=jinja2.FileSystemLoader(config.templates.prompts_dir),
+    loader=jinja2.FileSystemLoader(Path(__file__).parent.parent.parent / "prompts"),
     autoescape=config.templates.autoescape,
     trim_blocks=config.templates.trim_blocks,
     lstrip_blocks=config.templates.lstrip_blocks,
@@ -52,10 +54,26 @@ def render_prompt_template(template_name: str, **kwargs) -> str:
         raise
 
 
+@contextmanager
+def get_firefly_client():
+    """
+    Context manager to get a configured FireflyClient instance.
+
+    Yields:
+        FireflyClient: Configured client instance
+    """
+    with FireflyClient(
+        host=config.firefly.host,
+        access_token=config.firefly.access_token.get_secret_value(),
+        timeout=config.firefly.timeout,
+    ) as client:
+        yield client
+
+
 class Account(BaseModel):
     """Account model"""
 
-    id: str
+    id: int
     name: str
     type: str
     notes: Optional[str] = ""
@@ -88,11 +106,7 @@ async def get_accounts() -> List[Account]:
     """
     try:
         # Create Firefly client with config values
-        with FireflyClient(
-            host=config.firefly.host,
-            access_token=config.firefly.access_token,
-            timeout=config.firefly.timeout,
-        ) as client:
+        with get_firefly_client() as client:
             # Fetch accounts from Firefly III
             firefly_accounts = client.get_accounts()
             # Map Firefly account data to MCP Account model
@@ -147,11 +161,7 @@ async def create_transactions(
     # }
     try:
         # Create Firefly client with config values
-        with FireflyClient(
-            host=config.firefly.host,
-            access_token=config.firefly.access_token,
-            timeout=config.firefly.timeout,
-        ) as client:
+        with get_firefly_client() as client:
             # Convert TransactionRequest objects to TransactionSplit objects
             transaction_splits = []
 
